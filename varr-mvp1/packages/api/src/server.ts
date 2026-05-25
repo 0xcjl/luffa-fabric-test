@@ -19,7 +19,11 @@ export function createApiServer(repositories: LaelRepositories = createMemoryRep
       const result = await dispatch(request.method ?? "GET", parts, body, url, repositories);
 
       if (result === undefined) {
-        writeJson(response, 404, { error: "not_found" });
+        writeJson(response, 404, {
+          error: "not_found",
+          method: request.method ?? "GET",
+          path: url.pathname
+        });
         return;
       }
 
@@ -42,25 +46,25 @@ async function dispatch(method: string, parts: string[], body: unknown, url: URL
 
   const resource = parts[1];
   if (resource === "agents") {
-    return handleAgentRoute(method, parts.slice(1), body, repositories);
+    return handleAgentRoute(method, parts, body, repositories);
   }
   if (resource === "capabilities") {
-    return handleCapabilityRoute(method, parts.slice(1), body, repositories);
+    return handleCapabilityRoute(method, parts, body, repositories);
   }
   if (resource === "contexts") {
-    return handleContextRoute(method, parts.slice(1), body, repositories);
+    return handleContextRoute(method, parts, body, repositories);
   }
   if (resource === "workflows") {
-    return handleWorkflowRoute(method, parts.slice(1), body, repositories);
+    return handleWorkflowRoute(method, parts, body, repositories);
   }
   if (resource === "execution") {
-    return handleExecutionRoute(method, parts.slice(1), body, repositories);
+    return handleExecutionRoute(method, parts, body, repositories);
   }
   if (resource === "feedback") {
-    return handleFeedbackRoute(method, parts.slice(1), body, repositories);
+    return handleFeedbackRoute(method, parts, body, repositories);
   }
   if (resource === "learning") {
-    return handleLearningRoute(method, parts.slice(1), url.searchParams.get("receipt_id"), repositories);
+    return handleLearningRoute(method, parts, url.searchParams.get("receipt_id"), repositories);
   }
   return undefined;
 }

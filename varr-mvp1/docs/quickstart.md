@@ -6,6 +6,12 @@ Run the full local demo:
 pnpm demo
 ```
 
+If Corepack cannot launch the pinned package manager on your local Node runtime, run the same commands through `npx`:
+
+```bash
+npx pnpm@11.1.3 demo
+```
+
 Expected end state:
 
 ```text
