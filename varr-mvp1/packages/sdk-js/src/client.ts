@@ -1,6 +1,30 @@
 import type { JsonResource } from "./resources.ts";
 import type { ExecutionRunResponse } from "./execution.ts";
 
+export type ApiErrorPayload = {
+  error: {
+    code: string;
+    message: string;
+    status: number;
+    method: string;
+    path: string;
+    details?: Record<string, unknown>;
+  };
+  receipt?: Record<string, unknown>;
+};
+
+export class LaelApiError extends Error {
+  readonly status: number;
+  readonly payload: ApiErrorPayload;
+
+  constructor(status: number, payload: ApiErrorPayload) {
+    super(payload.error.message);
+    this.name = "LaelApiError";
+    this.status = status;
+    this.payload = payload;
+  }
+}
+
 export class LaelClient {
   private readonly baseUrl: string;
 
@@ -54,7 +78,7 @@ export class LaelClient {
 async function readResponse<T>(response: Response): Promise<T> {
   const payload = await response.json();
   if (!response.ok) {
-    throw new Error(JSON.stringify(payload));
+    throw new LaelApiError(response.status, payload as ApiErrorPayload);
   }
   return payload as T;
 }

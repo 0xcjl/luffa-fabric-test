@@ -6,8 +6,9 @@ Run the full local demo:
 pnpm demo
 ```
 
-Use Node.js 24 LTS for local verification. The repository includes `.nvmrc`
-files so version managers and CI use the same runtime.
+Use Node.js 24 LTS as the default local verification runtime. The repository
+includes `.nvmrc` files so version managers and CI use the same baseline. Node
+26 is covered by a separate compatibility check.
 
 If Corepack cannot launch the pinned package manager on your local Node runtime, run the same commands through `npx`:
 
@@ -40,9 +41,20 @@ Start the API with in-memory state:
 pnpm api
 ```
 
-For restart persistence during local API testing, point `LAEL_STATE_FILE` at a
-snapshot file:
+Use a lightweight JSON snapshot for demo persistence:
 
 ```bash
-LAEL_STATE_FILE=.lael/api-state.json pnpm api
+LAEL_STORAGE_DRIVER=snapshot LAEL_STATE_FILE=.lael/api-state.json pnpm api
+```
+
+Use SQLite for local long-running service verification:
+
+```bash
+LAEL_STORAGE_DRIVER=sqlite LAEL_SQLITE_PATH=.lael/varr.db pnpm api
+```
+
+Run the API demo against SQLite:
+
+```bash
+LAEL_STORAGE_DRIVER=sqlite LAEL_SQLITE_PATH=.lael/varr.db pnpm demo:api
 ```

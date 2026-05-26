@@ -1,9 +1,8 @@
 import { once } from "node:events";
 import type { AddressInfo } from "node:net";
 import type { Server } from "node:http";
-import { createApiServer } from "../packages/api/src/server.ts";
-import { createMemoryRepositories } from "../packages/core/src/storage/memory.repository.ts";
-import { LaelClient } from "../packages/sdk-js/src/client.ts";
+import { createApiServer, createApiState } from "../packages/api/src/server.ts";
+import { LaelApiError, LaelClient } from "../packages/sdk-js/src/client.ts";
 
 const agent = {
   kind: "AgentResource",
@@ -94,11 +93,12 @@ const intent = {
   created_at: "2026-05-25T00:00:00Z"
 };
 
-const feedback = {
+function feedback(receiptId: string) {
+  return {
   kind: "FeedbackResource",
   version: "1.0",
-  feedback_id: "fb_001",
-  receipt_id: "receipt_001",
+  feedback_id: `fb_${receiptId}`,
+  receipt_id: receiptId,
   source: "user",
   source_did: "did:luffa:user:owner001",
   label: "accepted",
@@ -107,27 +107,28 @@ const feedback = {
   verified: true,
   weight: 1,
   created_at: "2026-05-25T00:00:00Z"
-};
+  };
+}
 
 async function main(): Promise<void> {
-  const server = createApiServer(createMemoryRepositories());
+  const state = await createApiState(process.env);
+  const server = createApiServer(state.repositories, { persistSnapshot: state.persistSnapshot });
   server.listen(0, "127.0.0.1");
   await once(server, "listening");
   const { port } = server.address() as AddressInfo;
   const client = new LaelClient(`http://127.0.0.1:${port}`);
 
   try {
-    await client.createAgent(agent);
-    await client.createContext(context);
-    await client.createWorkflow(workflow);
-    await client.createCapability(capability);
+    await createOrReuse(() => client.createAgent(agent));
+    await createOrReuse(() => client.createContext(context));
+    await createOrReuse(() => client.createWorkflow(workflow));
+    await createOrReuse(() => client.createCapability(capability));
 
     const execution = await client.run(intent);
-    const feedbackResult = await client.submitFeedback(feedback);
-    const signals = await client.learningSignals("receipt_001");
-
     const status = execution.receipt.status;
     const receiptId = execution.receipt.receipt_id;
+    const feedbackResult = await client.submitFeedback(feedback(String(receiptId)));
+    const signals = await client.learningSignals(String(receiptId));
     const feedbackAccepted = feedbackResult.ok === true;
     const learningSignalEmitted = signals.length > 0;
 
@@ -137,6 +138,17 @@ async function main(): Promise<void> {
     console.log(`API learning signal emitted: ${learningSignalEmitted ? "yes" : "no"}`);
   } finally {
     await closeServer(server);
+  }
+}
+
+async function createOrReuse(create: () => Promise<unknown>): Promise<void> {
+  try {
+    await create();
+  } catch (error) {
+    if (error instanceof LaelApiError && error.payload.error.code === "duplicate_resource") {
+      return;
+    }
+    throw error;
   }
 }
 

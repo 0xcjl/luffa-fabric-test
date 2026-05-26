@@ -21,4 +21,4 @@ Resolve Agent
 
 Adapters implement `ExecutionAdapter`, but each adapter must receive a runtime authorization token from `ExecutionRunner`. The token is created only inside the runner used by the orchestrator after checks pass.
 
-Repositories are abstracted behind interfaces in `packages/core/src/storage`. MVP1 ships with memory repositories and a SQLite extension placeholder.
+Repositories are abstracted behind interfaces in `packages/core/src/storage`. MVP1 supports memory repositories for ephemeral tests, JSON snapshots for lightweight demos, and SQLite JSON repositories for local long-running API verification.

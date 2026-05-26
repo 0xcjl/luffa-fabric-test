@@ -23,6 +23,29 @@ export function createOpenApiSpec(): Record<string, unknown> {
       "/v1/feedback/{feedback_id}": { get: { summary: "Get FeedbackResource" } },
       "/v1/learning/signals": { get: { summary: "List LearningSignal by receipt_id" } },
       "/v1/learning/signals/{signal_id}": { get: { summary: "Get LearningSignal" } }
+    },
+    components: {
+      schemas: {
+        ApiError: {
+          type: "object",
+          required: ["error"],
+          properties: {
+            error: {
+              type: "object",
+              required: ["code", "message", "status", "method", "path"],
+              properties: {
+                code: { type: "string" },
+                message: { type: "string" },
+                status: { type: "integer" },
+                method: { type: "string" },
+                path: { type: "string" },
+                details: { type: "object" }
+              }
+            },
+            receipt: { type: "object", description: "ExecutionReceipt when an execution path generated evidence." }
+          }
+        }
+      }
     }
   };
 }

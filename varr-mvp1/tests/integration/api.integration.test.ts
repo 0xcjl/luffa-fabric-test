@@ -37,6 +37,22 @@ type LearningSignal = {
   receipt_id: string;
 };
 
+type ApiErrorResponse = {
+  error: {
+    code: string;
+    message: string;
+    status: number;
+    method: string;
+    path: string;
+    details?: Record<string, unknown>;
+  };
+  receipt?: {
+    receipt_id: string;
+    status: string;
+    summary: string;
+  };
+};
+
 test("standard API routes run the full trusted execution loop", async () => {
   await withApi(async (baseUrl) => {
     const openapi = await getJson<{ paths: Record<string, unknown> }>(baseUrl, "/openapi.json");
@@ -82,10 +98,13 @@ test("standard API routes run the full trusted execution loop", async () => {
 
 test("standard API routes expose runtime safety decisions", async () => {
   await withSeededApi({ includeCapability: false }, async (baseUrl) => {
-    const execution = await postJson<RunResponse>(baseUrl, "/v1/execution/run", intent());
-    assert.equal(execution.status, 200);
-    assert.equal(execution.payload.receipt.status, "denied");
-    assert.match(execution.payload.receipt.summary, /Capability denied/);
+    const execution = await postJson<ApiErrorResponse>(baseUrl, "/v1/execution/run", intent());
+    assert.equal(execution.status, 403);
+    assert.equal(execution.payload.error.code, "execution_denied");
+    assert.equal(execution.payload.error.status, 403);
+    assert.equal(execution.payload.error.path, "/v1/execution/run");
+    assert.equal(execution.payload.receipt?.status, "denied");
+    assert.match(execution.payload.receipt?.summary ?? "", /Capability denied/);
   });
 
   await withSeededApi({
@@ -96,17 +115,18 @@ test("standard API routes expose runtime safety decisions", async () => {
       ]
     }
   }, async (baseUrl) => {
-    const execution = await postJson<RunResponse>(baseUrl, "/v1/execution/run", intent({ requested_actions: ["read", "summarize"] }));
-    assert.equal(execution.status, 200);
-    assert.equal(execution.payload.receipt.status, "denied");
-    assert.match(execution.payload.receipt.summary, /Context boundary violation/);
+    const execution = await postJson<ApiErrorResponse>(baseUrl, "/v1/execution/run", intent({ requested_actions: ["read", "summarize"] }));
+    assert.equal(execution.status, 403);
+    assert.equal(execution.payload.error.code, "execution_denied");
+    assert.equal(execution.payload.receipt?.status, "denied");
+    assert.match(execution.payload.receipt?.summary ?? "", /Context boundary violation/);
   });
 
   await withSeededApi({}, async (baseUrl) => {
-    const execution = await postJson<RunResponse>(baseUrl, "/v1/execution/run", intent({ requested_actions: ["export_private_key"] }));
-    assert.equal(execution.status, 200);
-    assert.equal(execution.payload.receipt.status, "denied");
-    assert.equal(execution.payload.receipt.risk.level, "critical");
+    const execution = await postJson<ApiErrorResponse>(baseUrl, "/v1/execution/run", intent({ requested_actions: ["export_private_key"] }));
+    assert.equal(execution.status, 403);
+    assert.equal(execution.payload.error.code, "execution_denied");
+    assert.equal(execution.payload.receipt?.status, "denied");
   });
 
   await withSeededApi({
@@ -120,26 +140,36 @@ test("standard API routes expose runtime safety decisions", async () => {
     }
   }, async (baseUrl) => {
     const execution = await postJson<RunResponse>(baseUrl, "/v1/execution/run", intent({ requested_actions: ["read", "publish"] }));
-    assert.equal(execution.status, 200);
+    assert.equal(execution.status, 202);
     assert.equal(execution.payload.receipt.status, "pending_approval");
     assert.equal(execution.payload.receipt.risk.approval_required, true);
   });
 
   await withApi(async (baseUrl) => {
-    const feedback = await postJson<FeedbackResponse>(baseUrl, "/v1/feedback", feedbackResource("receipt_missing"));
-    assert.equal(feedback.status, 200);
-    assert.equal(feedback.payload.ok, false);
-    assert.equal(feedback.payload.reason, "receipt_not_found");
+    const feedback = await postJson<ApiErrorResponse>(baseUrl, "/v1/feedback", feedbackResource("receipt_missing"));
+    assert.equal(feedback.status, 404);
+    assert.equal(feedback.payload.error.code, "receipt_not_found");
+    assert.equal(feedback.payload.error.path, "/v1/feedback");
   });
 });
 
 test("missing API routes return method and path diagnostics", async () => {
   await withApi(async (baseUrl) => {
-    const missing = await getJson<Record<string, unknown>>(baseUrl, "/v1/unknown");
+    const missing = await getJson<ApiErrorResponse>(baseUrl, "/v1/unknown");
     assert.equal(missing.status, 404);
-    assert.equal(missing.payload.error, "not_found");
-    assert.equal(missing.payload.method, "GET");
-    assert.equal(missing.payload.path, "/v1/unknown");
+    assert.equal(missing.payload.error.code, "not_found");
+    assert.equal(missing.payload.error.method, "GET");
+    assert.equal(missing.payload.error.path, "/v1/unknown");
+  });
+});
+
+test("API returns conflict errors for duplicate resources", async () => {
+  await withApi(async (baseUrl) => {
+    await postJson(baseUrl, "/v1/agents", agent());
+    const duplicate = await postJson<ApiErrorResponse>(baseUrl, "/v1/agents", agent());
+    assert.equal(duplicate.status, 409);
+    assert.equal(duplicate.payload.error.code, "duplicate_resource");
+    assert.equal(duplicate.payload.error.status, 409);
   });
 });
 

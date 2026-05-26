@@ -30,3 +30,21 @@ GET /v1/learning/signals?receipt_id={receipt_id}
 ```
 
 The API routes validate resources and call core services. Execution uses `RuntimeOrchestrator`; route handlers do not call adapters directly.
+
+Errors use a stable envelope:
+
+```json
+{
+  "error": {
+    "code": "execution_denied",
+    "message": "Capability denied",
+    "status": 403,
+    "method": "POST",
+    "path": "/v1/execution/run",
+    "details": {}
+  },
+  "receipt": {}
+}
+```
+
+Execution denials and failures keep their `ExecutionReceipt` in the response so callers can audit the decision. High-risk approval gates return HTTP `202` with `receipt.status` set to `pending_approval`.

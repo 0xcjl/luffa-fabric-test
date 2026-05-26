@@ -119,6 +119,23 @@ export function intent(overrides: Partial<ExecutionIntent> = {}): ExecutionInten
   }, validateExecutionIntent);
 }
 
+export function feedbackResource(receiptId: string) {
+  return {
+    kind: "FeedbackResource",
+    version: "1.0",
+    feedback_id: `fb_${receiptId}`,
+    receipt_id: receiptId,
+    source: "user",
+    source_did: ids.owner,
+    label: "accepted",
+    score: 5,
+    comment: "Useful summary.",
+    verified: true,
+    weight: 1,
+    created_at: "2026-05-25T00:00:00Z"
+  };
+}
+
 export async function seededRepositories(options: { includeCapability?: boolean; capabilityOverride?: Partial<CapabilityGrant>; workflowOverride?: Partial<WorkflowResource>; contextOverride?: Partial<ContextResource>; agentOverride?: Partial<AgentResource> } = {}): Promise<LaelRepositories> {
   const repositories = createMemoryRepositories();
   await repositories.agents.create(agent(options.agentOverride));
