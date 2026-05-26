@@ -2,6 +2,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import { createMemoryRepositories } from "../../core/src/storage/memory.repository.ts";
 import type { LaelRepositories } from "../../core/src/storage/repository.interface.ts";
 import { createOpenApiSpec } from "./openapi.ts";
+import { createSnapshotRepositories } from "./persistence.ts";
 import { handleAgentRoute } from "./routes/agents.ts";
 import { handleCapabilityRoute } from "./routes/capabilities.ts";
 import { handleContextRoute } from "./routes/contexts.ts";
@@ -10,7 +11,11 @@ import { handleExecutionRoute } from "./routes/executions.ts";
 import { handleFeedbackRoute } from "./routes/feedback.ts";
 import { handleLearningRoute } from "./routes/learning.ts";
 
-export function createApiServer(repositories: LaelRepositories = createMemoryRepositories()) {
+export type ApiServerOptions = {
+  persistSnapshot?: () => Promise<void>;
+};
+
+export function createApiServer(repositories: LaelRepositories = createMemoryRepositories(), options: ApiServerOptions = {}) {
   return createServer(async (request, response) => {
     try {
       const url = new URL(request.url ?? "/", "http://localhost");
@@ -25,6 +30,10 @@ export function createApiServer(repositories: LaelRepositories = createMemoryRep
           path: url.pathname
         });
         return;
+      }
+
+      if (request.method !== "GET" && options.persistSnapshot) {
+        await options.persistSnapshot();
       }
 
       writeJson(response, 200, result);
@@ -87,8 +96,19 @@ function writeJson(response: ServerResponse, statusCode: number, payload: unknow
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
+  startApiServer().catch((error) => {
+    console.error(error instanceof Error ? error.message : error);
+    process.exitCode = 1;
+  });
+}
+
+async function startApiServer(): Promise<void> {
+  const stateFile = process.env.LAEL_STATE_FILE;
+  const state = stateFile
+    ? await createSnapshotRepositories(stateFile)
+    : { repositories: createMemoryRepositories(), persistSnapshot: undefined };
   const port = Number(process.env.PORT ?? 8787);
-  createApiServer().listen(port, () => {
+  createApiServer(state.repositories, { persistSnapshot: state.persistSnapshot }).listen(port, () => {
     console.log(`LAEL MVP1 API listening on http://localhost:${port}`);
   });
 }

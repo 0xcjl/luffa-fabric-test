@@ -20,10 +20,30 @@ jobs:
           run_install: false
       - uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm build
+
+  varr-mvp1:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.1.3
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: varr-mvp1/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+        working-directory: varr-mvp1
+      - run: pnpm test
+        working-directory: varr-mvp1
+      - run: pnpm demo:api
+        working-directory: varr-mvp1
