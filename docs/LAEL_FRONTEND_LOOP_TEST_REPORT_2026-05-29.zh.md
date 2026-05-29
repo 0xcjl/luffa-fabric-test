@@ -7,6 +7,18 @@
 > 后端地址：`http://127.0.0.1:3000/`  
 > QA Runner：本地启用，`ENABLE_LAEL_QA_RUNNER=true`
 
+## 0. 对应关系
+
+本报告是 LAEL / Luffa Fabric v0.3 的**第二轮测试报告**，对应：
+
+- `docs/LAEL_FRONTEND_LOOP_IMPROVEMENT_PLAN_2026-05-29.zh.md`
+
+前一轮 v0.3 文档与基础功能落地测试报告为：
+
+- `docs/LAEL_TEST_REPORT_v0.3_2026-05-28.zh.md`
+
+两份测试报告覆盖不同阶段：`LAEL_TEST_REPORT_v0.3_2026-05-28.zh.md` 覆盖 v0.3 文档、API、VARR、swap、fiat proof 等基础能力；本报告覆盖前端闭环控制台、QA Runner、Evidence / Learning UI 和浏览器验收。本报告不替代前一份测试报告。
+
 ## 1. 结论
 
 本轮围绕“前端闭环不连贯、链上/链下路径不清晰、自动化测试和人工测试混在一起、Evidence/Learning 展示不充分”的问题，已完成一次完整改版。

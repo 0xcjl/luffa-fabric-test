@@ -2,6 +2,22 @@
 
 日期：2026-05-28
 
+## 最终测试结果摘要（第一轮）
+
+本报告是 LAEL / Luffa Fabric v0.3 新框架文档与基础功能落地后的**第一轮测试报告**，对应：
+
+- `docs/LAEL_MVP_NEW_FRAMEWORK_OVERVIEW_2026-05-28.zh.md`
+- `docs/LAEL_FRAMEWORK_DOCS_IMPLEMENTATION_PLAN_2026-05-28.zh.md`
+- `docs/LAEL_REQUIREMENTS_v0.3.zh.md` / `docs/LAEL_REQUIREMENTS_v0.3.en.md`
+- `docs/LAEL_MVP_v0.3.zh.md` / `docs/LAEL_MVP_v0.3.en.md`
+- `docs/LAEL_TEST_PLAN_v0.3.zh.md` / `docs/LAEL_TEST_PLAN_v0.3.en.md`
+
+后续第二轮前端闭环与 QA Runner 改进的测试报告为：
+
+- `docs/LAEL_FRONTEND_LOOP_TEST_REPORT_2026-05-29.zh.md`
+
+两份测试报告对应不同阶段，应同时保留。本报告不被后一份前端测试报告替代。
+
 ## 结论
 
 当前 v0.3 新框架的**功能补齐、自动化测试、前端构建、API smoke test 已通过**。
