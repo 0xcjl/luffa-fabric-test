@@ -52,6 +52,40 @@ http://127.0.0.1:3000
 
 ## 4. Run the MVP 2 flow
 
+Unified Runtime Fabric v0.3 loops:
+
+Off-chain Runtime Agent loop:
+
+1. Use `varr-mvp1` resources to create an OpenClaw/Codex-style `AgentResource`
+2. Run a public community summary through `RuntimeOrchestrator`
+3. Confirm capability and context boundary checks
+4. Read the `ExecutionReceipt`
+5. Submit feedback and read the `LearningSignal`
+
+On-chain Value Agent transfer loop:
+
+1. `POST /v2/payment-agent/proposals`
+2. Confirm the returned proposal is `allow_pending_human_confirmation`
+3. `POST /v2/payment-agent/proposals/:proposalId/execute`
+4. `POST /v2/payment-agent/receipts/:executionId/feedback`
+5. `GET /v2/payment-agent/memory/:ownerRef`
+6. Submit a second proposal such as `再给 Alice 发一次测试奖励`
+
+Simulated swap loop:
+
+1. `POST /v2/value-agent/swap-proposals`
+2. Confirm the returned proposal is simulated and permission checked
+3. `POST /v2/value-agent/swap-proposals/:proposalId/execute`
+4. Confirm the receipt uses `resource-credit` and has no real txHash
+
+Fiat / invoice proof loop:
+
+1. `POST /v2/settlement/transfer`
+2. Use rail `fiat-proof` or `invoice-proof`
+3. Confirm the settlement record is completed with a proof reference and no external payment call
+
+Core wallet and settlement API flow:
+
 1. `POST /v2/wallet/connect`
 2. Sign the returned message in Coinbase Wallet, MetaMask, OKX Wallet, WalletConnect, Phantom, or Luffa Wallet.
 3. `POST /v2/wallet/verify`

@@ -187,6 +187,43 @@ describe("settlement adapters", () => {
     db.close();
   });
 
+  it("records fiat and invoice proof settlements without external payment rails", async () => {
+    const db = createDb({ path: ":memory:" });
+    const settlement = new SettlementService(db);
+
+    const fiat = await settlement.settle({
+      executionId: "exec_fiat_proof",
+      payerDid: "did:luffa:user",
+      payeeDid: "did:luffa:agent:invoice",
+      amount: 25,
+      asset: "FIAT_USD",
+      rail: "fiat-proof",
+      metadata: {
+        reference: "stripe-test-proof-001",
+        purpose: "Agent service invoice",
+      },
+    });
+    const invoice = await settlement.settle({
+      executionId: "exec_invoice_proof",
+      payerDid: "did:luffa:user",
+      payeeDid: "did:luffa:agent:invoice",
+      amount: 25,
+      asset: "FIAT_USD",
+      rail: "invoice-proof",
+      metadata: {
+        reference: "invoice-001",
+        purpose: "Agent service invoice",
+      },
+    });
+
+    expect(fiat.status).toBe("COMPLETED");
+    expect(fiat.transactionRef).toBe("fiat-proof:stripe-test-proof-001");
+    expect(fiat.txHash).toBeUndefined();
+    expect(invoice.status).toBe("COMPLETED");
+    expect(invoice.transactionRef).toBe("invoice-proof:invoice-001");
+    db.close();
+  });
+
   it("does not leak adapter libraries into LAEL core", async () => {
     const { readFile } = await import("node:fs/promises");
     const core = await readFile(new URL("../src/core/index.ts", import.meta.url), "utf8");

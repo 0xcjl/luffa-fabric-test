@@ -1,8 +1,8 @@
 # Luffa Fabric
 
-**Agent identity, delegated permission, wallet settlement, trusted execution evidence, and reputation for the agentic economy.**
+**Verifiable Adaptive Resource Runtime for the agentic economy: off-chain execution, on-chain verifiability, and on-chain value execution.**
 
-Luffa Fabric is the capability fabric for wallet-connected and context-bounded AI agents. It gives developers the primitives to register agents, bind user wallets to DIDs, issue scoped capability grants, enforce spending and chain limits, run trusted workflows, record execution evidence, settle through chain adapters, and turn feedback into reputation or learning-ready signals.
+Luffa Fabric is the runtime fabric for context-bounded and wallet-connected AI agents. It gives developers the primitives to map external agents to DIDs, issue scoped capability grants, enforce context and value boundaries, run trusted workflows, record execution evidence, settle through resource or value rails, and turn feedback into reputation or learning-ready signals.
 
 Built by **Luffa AI Research Lab**.
 
@@ -21,7 +21,10 @@ AI agents are beginning to act for users, teams, applications, communities, and 
 - what evidence proves the outcome
 - how feedback changes reputation and future learning
 
-Luffa Fabric is the connector layer for that trust loop.
+Luffa Fabric is the connector layer for that trust loop. The v0.3 MVP is a unified runtime MVP with two acceptance paths:
+
+- **Off-chain Agent Execution** for OpenClaw, Hermes, Claude Code, Codex, and API agents.
+- **On-chain Value Execution** for transfer, trading/swap proposal, settlement, reward, claim, and payment.
 
 ```text
 Identity
@@ -29,7 +32,7 @@ Identity
   -> Delegated Permission
   -> Context Boundary
   -> Trusted Execution
-  -> Settlement Adapter
+  -> Settlement / Resource Accounting
   -> Ledger / Receipt
   -> Feedback
   -> Reputation / Learning Signal
@@ -71,7 +74,7 @@ flowchart TD
 | Permission | Default-deny policy engine with action, risk, budget, asset, chain, expiry, and revocation checks |
 | Context | MVP1 VARR context resources, namespace isolation, public-scope enforcement |
 | Execution | Agent invocation pipeline plus trusted VARR runtime sidecar |
-| Settlement | Luffa Points, EVM native, EVM ERC20, Solana native, Solana SPL, Endless adapter abstraction |
+| Settlement | Luffa Points, EVM native, EVM ERC20, Solana native, Solana SPL, Endless adapter abstraction, fiat/invoice proof rails |
 | Evidence | Execution ledger, settlement records, Merkle fields, and VARR `ExecutionReceipt` |
 | Feedback | Feedback submission, reputation scoring, and learning-ready signal emission |
 | API | Phase 1 v1 APIs, MVP 2 wallet and settlement APIs, VARR sidecar API |
@@ -275,6 +278,42 @@ Context boundary respected: yes
 ```
 
 ## Demo Flows
+
+Unified Runtime Fabric v0.3 demo flows:
+
+Off-chain Runtime Agent flow:
+
+1. Map an OpenClaw/Codex-style external agent to a LAEL Agent DID.
+2. Run a public community summary through VARR `RuntimeOrchestrator`.
+3. Enforce capability, context boundary, approval, and forbidden-action checks.
+4. Generate `ExecutionReceipt`, feedback, and `LearningSignal`.
+
+On-chain Value Agent transfer flow:
+
+1. Bind a wallet to an owner DID.
+2. Submit natural-language transfer input to `/v2/payment-agent/proposals`.
+3. Review the parsed intent and `allow_pending_human_confirmation` decision.
+4. Execute the proposal only after explicit user confirmation.
+5. Generate a v0.2 receipt with raw input, parsed intent, permission decision, wallet tx, settlement result, and learning status.
+6. Submit feedback to update agent score, user preference memory, policy suggestions, and training examples.
+7. Submit a second shorthand request so the agent can use memory while still requiring permission checks and wallet confirmation.
+
+On-chain simulated swap flow:
+
+1. Submit a swap request such as `Swap 0.0001 ETH to USDC on Base Sepolia` to `/v2/value-agent/swap-proposals`.
+2. Review the simulated swap intent and permission decision.
+3. Execute the proposal only as a simulated receipt; no real DEX trade or wallet signature occurs.
+
+Fiat / proof settlement flow:
+
+1. Submit a settlement instruction using `fiat-proof`, `invoice-proof`, `resource-credit`, or `onofframp-intent`.
+2. Store a proof settlement record without calling Stripe, banks, or on/off-ramp providers.
+
+The complete v0.3备案 documents are in [`docs/`](./docs/):
+
+- [Requirements zh](./docs/LAEL_REQUIREMENTS_v0.3.zh.md) / [Requirements en](./docs/LAEL_REQUIREMENTS_v0.3.en.md)
+- [MVP zh](./docs/LAEL_MVP_v0.3.zh.md) / [MVP en](./docs/LAEL_MVP_v0.3.en.md)
+- [Test Plan zh](./docs/LAEL_TEST_PLAN_v0.3.zh.md) / [Test Plan en](./docs/LAEL_TEST_PLAN_v0.3.en.md)
 
 Core MVP 2 flow:
 

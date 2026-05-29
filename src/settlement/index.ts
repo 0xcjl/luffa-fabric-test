@@ -117,6 +117,9 @@ export class SettlementService {
     if (instruction.rail === "luffa-points") {
       return this.transferLuffaPoints(instruction);
     }
+    if (isProofRail(instruction.rail)) {
+      return this.recordProofSettlement(instruction);
+    }
 
     return this.settleWithAdapter(instruction);
   }
@@ -331,6 +334,40 @@ export class SettlementService {
     }
   }
 
+  private recordProofSettlement(instruction: SettlementInstruction): SettlementRecord {
+    assertPositiveAmount(instruction.amount);
+
+    const settlementId = instruction.settlementId ?? newId("settle");
+    const existing = this.getSettlementRecord(settlementId);
+    if (existing) {
+      return existing;
+    }
+
+    const reference =
+      typeof instruction.metadata?.reference === "string" && instruction.metadata.reference.trim()
+        ? instruction.metadata.reference
+        : settlementId;
+    const record: SettlementRecord = {
+      settlementId,
+      executionId: instruction.executionId,
+      payerDid: instruction.payerDid,
+      payeeDid: instruction.payeeDid,
+      asset: instruction.asset,
+      amount: instruction.amount,
+      rail: instruction.rail,
+      status: "COMPLETED",
+      transactionRef: `${instruction.rail}:${reference}`,
+      chainType: instruction.chainType,
+      chainId: instruction.chainId,
+      walletAddress: instruction.walletAddress ?? instruction.fromAddress,
+      createdAt: nowIso(),
+      schemaVersion: instruction.schemaVersion ?? DEFAULT_SCHEMA_VERSION,
+      apiVersion: instruction.apiVersion ?? DEFAULT_API_VERSION,
+    };
+    this.insertSettlement(record);
+    return record;
+  }
+
   private getAccount(did: string, asset: SettlementAsset): AccountRow | undefined {
     return this.database.db
       .prepare("SELECT * FROM accounts WHERE did = ? AND asset = ?")
@@ -422,6 +459,15 @@ function inferRailChainType(rail: SettlementInstruction["rail"]): ChainType {
     return "solana";
   }
   return "evm";
+}
+
+function isProofRail(rail: SettlementInstruction["rail"]): boolean {
+  return (
+    rail === "fiat-proof" ||
+    rail === "invoice-proof" ||
+    rail === "resource-credit" ||
+    rail === "onofframp-intent"
+  );
 }
 
 function inferChainType(chainId: string | undefined): ChainType | undefined {

@@ -5,6 +5,15 @@ import { registerRoutes } from "./routes.js";
 export async function buildServer(options: LaelOptions = {}) {
   const lael = new LAEL(options);
   const app = Fastify({ logger: process.env.NODE_ENV !== "test" });
+  app.addHook("onRequest", async (request, reply) => {
+    reply.header("access-control-allow-origin", "*");
+    reply.header("access-control-allow-methods", "GET,POST,PATCH,OPTIONS");
+    reply.header("access-control-allow-headers", "content-type,authorization");
+    if (request.method === "OPTIONS") {
+      return reply.code(204).send();
+    }
+    return undefined;
+  });
   await registerRoutes(app, lael);
 
   app.addHook("onClose", async () => {

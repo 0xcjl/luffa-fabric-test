@@ -2,6 +2,7 @@ import type { ChainKey, ChainType } from "../chains/types.js";
 
 export type SettlementAsset =
   | "LUFFA_POINTS"
+  | "FIAT_USD"
   | "ETH"
   | "USDC"
   | "USDT"
@@ -10,6 +11,10 @@ export type SettlementAsset =
 
 export type SettlementRail =
   | "luffa-points"
+  | "fiat-proof"
+  | "invoice-proof"
+  | "resource-credit"
+  | "onofframp-intent"
   | "evm-native"
   | "evm-erc20"
   | "solana-native"
