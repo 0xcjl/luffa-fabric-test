@@ -47,6 +47,20 @@ Identity -> Permission -> Execution -> Settlement -> Evidence -> Feedback -> Lea
 | Governable | Learning and automation cannot bypass permission, safety, privacy, payment, or approval boundaries. |
 | Open Infrastructure | The system grows deeply inside Luffa while exposing standard interfaces to external ecosystems. |
 
+## Governance Extension / Microsoft AGT Adapter
+
+LAEL's Permission layer should remain pluggable. Microsoft AGT can be integrated as one external governance brick inside the Permission / Governance Extension Layer to strengthen policy enforcement, tool-call interception, audit decision records, MCP security gateway, runtime guard, and SRE / kill switch.
+
+AGT does not replace the Luffa Fabric core protocol, Luffa DID / Mapping DID, wallet signing, settlement, Execution Receipt, Learning, or reputation. In the first phase it is only an optional adapter; Luffa Native Policy remains the default permission module.
+
+| AGT Capability | Luffa Layer | Phase-one Handling |
+| --- | --- | --- |
+| Policy Engine | Permission Extension | Optional adapter. |
+| Tool Call Interception | Execution Extension | Prioritize off-chain Agent / MCP tool guard. |
+| Audit Decision Record | Evidence Extension | Map into Luffa receipt metadata. |
+| Sandbox / Runtime Guard | Execution Extension | Future optional integration. |
+| SRE / Kill Switch | Governance Extension | Future optional integration. |
+
 ## Unified Architecture
 
 LAEL follows a unified architecture: off-chain execution, on-chain verifiability, and on-chain value execution.

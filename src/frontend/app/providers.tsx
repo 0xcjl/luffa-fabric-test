@@ -1,6 +1,5 @@
 "use client";
 
-import { RainbowKitProvider, getDefaultConfig } from "@rainbow-me/rainbowkit";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { WalletAdapterNetwork } from "@solana/wallet-adapter-base";
 import { ConnectionProvider, WalletProvider } from "@solana/wallet-adapter-react";
@@ -9,13 +8,24 @@ import { PhantomWalletAdapter } from "@solana/wallet-adapter-phantom";
 import { clusterApiUrl } from "@solana/web3.js";
 import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
-import { WagmiProvider } from "wagmi";
-import { base, baseSepolia, mainnet, polygonAmoy, sepolia } from "wagmi/chains";
+import { WagmiProvider, createConfig, http, injected } from "wagmi";
+import { base, baseSepolia, bsc, bscTestnet, mainnet, polygonAmoy, sepolia } from "wagmi/chains";
 
-const config = getDefaultConfig({
-  appName: "Luffa Fabric",
-  projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "demo",
-  chains: [baseSepolia, base, sepolia, polygonAmoy, mainnet],
+const evmChains = [baseSepolia, bscTestnet, bsc, base, sepolia, polygonAmoy, mainnet] as const;
+const evmConnectors = [injected()];
+
+const config = createConfig({
+  chains: evmChains,
+  connectors: evmConnectors,
+  transports: {
+    [baseSepolia.id]: http(),
+    [bscTestnet.id]: http(),
+    [bsc.id]: http(),
+    [base.id]: http(),
+    [sepolia.id]: http(),
+    [polygonAmoy.id]: http(),
+    [mainnet.id]: http()
+  },
   ssr: true
 });
 
@@ -27,13 +37,11 @@ export function Providers({ children }: { children: ReactNode }) {
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider>
-          <ConnectionProvider endpoint={endpoint}>
-            <WalletProvider wallets={wallets} autoConnect>
-              <WalletModalProvider>{children}</WalletModalProvider>
-            </WalletProvider>
-          </ConnectionProvider>
-        </RainbowKitProvider>
+        <ConnectionProvider endpoint={endpoint}>
+          <WalletProvider wallets={wallets} autoConnect>
+            <WalletModalProvider>{children}</WalletModalProvider>
+          </WalletProvider>
+        </ConnectionProvider>
       </QueryClientProvider>
     </WagmiProvider>
   );

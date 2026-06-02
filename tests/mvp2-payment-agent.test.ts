@@ -374,4 +374,117 @@ describe("LuffaFabric External MVP v0.2 payment agent loop", () => {
 
     await app.close();
   });
+
+  it("parses BNB, Solana, and Endless intents and records multi-chain receipt metadata", async () => {
+    const { app } = await buildServer({ path: ":memory:" });
+    await bindWallet(app);
+
+    const bnb = await app.inject({
+      method: "POST",
+      url: "/v2/payment-agent/proposals",
+      payload: {
+        ...proposalPayload("Send 0.001 BNB to Alice on BNB testnet", 0.01),
+        defaultAsset: "BNB",
+        policy: {
+          ...proposalPayload("Send 0.001 BNB to Alice on BNB testnet", 0.01).policy,
+          allowedAssets: ["BNB"],
+          allowedChain: "BNB_TESTNET",
+        },
+      },
+    });
+    expect(bnb.statusCode).toBe(201);
+    const bnbProposal = bnb.json() as { proposalId: string; parsedIntent: { chainKey: string; asset: string } };
+    expect(bnbProposal.parsedIntent).toMatchObject({ chainKey: "BNB_TESTNET", asset: "BNB" });
+
+    const executedBnb = await app.inject({
+      method: "POST",
+      url: `/v2/payment-agent/proposals/${bnbProposal.proposalId}/execute`,
+      payload: {
+        humanConfirmed: true,
+        walletType: "okx",
+        txHash: "0xbnbtesttx001",
+        executionMode: "real",
+        appAuthorizationStatus: "approved",
+      },
+    });
+    expect(executedBnb.statusCode).toBe(201);
+    expect(executedBnb.json()).toMatchObject({
+      receipt: {
+        walletTx: {
+          chainKey: "BNB_TESTNET",
+          chainType: "evm",
+          walletType: "okx",
+          txHash: "0xbnbtesttx001",
+          executionMode: "real",
+          appAuthorizationStatus: "approved",
+        },
+        settlementResult: { status: "completed" },
+      },
+    });
+
+    const solana = await app.inject({
+      method: "POST",
+      url: "/v2/payment-agent/proposals",
+      payload: {
+        ...proposalPayload("Send 0.01 SOL to Alice on Solana devnet", 0.1),
+        defaultAsset: "SOL",
+        recipients: [{ name: "Alice", address: "So11111111111111111111111111111111111111113" }],
+        policy: {
+          ...proposalPayload("Send 0.01 SOL to Alice on Solana devnet", 0.1).policy,
+          allowedAssets: ["SOL"],
+          allowedChain: "SOLANA_DEVNET",
+        },
+      },
+    });
+    expect(solana.statusCode).toBe(201);
+    expect(solana.json()).toMatchObject({
+      parsedIntent: { chainKey: "SOLANA_DEVNET", asset: "SOL" },
+    });
+
+    const endless = await app.inject({
+      method: "POST",
+      url: "/v2/payment-agent/proposals",
+      payload: {
+        ...proposalPayload("Send 1 EDS to Alice with Luffa App on Endless testnet", 2),
+        defaultAsset: "EDS",
+        recipients: [{ name: "Alice", address: "0x0000000000000000000000000000000000000000000000000000000000000002" }],
+        policy: {
+          ...proposalPayload("Send 1 EDS to Alice with Luffa App on Endless testnet", 2).policy,
+          allowedAssets: ["EDS"],
+          allowedChain: "ENDLESS_TESTNET",
+        },
+      },
+    });
+    expect(endless.statusCode).toBe(201);
+    const endlessProposal = endless.json() as { proposalId: string };
+    expect(endless.json()).toMatchObject({
+      parsedIntent: { chainKey: "ENDLESS_TESTNET", asset: "EDS" },
+    });
+
+    const rejectedEndless = await app.inject({
+      method: "POST",
+      url: `/v2/payment-agent/proposals/${endlessProposal.proposalId}/execute`,
+      payload: {
+        humanConfirmed: true,
+        walletType: "luffa",
+        executionMode: "sdk-ready",
+        appAuthorizationStatus: "rejected",
+      },
+    });
+    expect(rejectedEndless.statusCode).toBe(201);
+    expect(rejectedEndless.json()).toMatchObject({
+      receipt: {
+        walletTx: {
+          chainKey: "ENDLESS_TESTNET",
+          chainType: "endless",
+          walletType: "luffa",
+          executionMode: "sdk-ready",
+          appAuthorizationStatus: "rejected",
+        },
+        settlementResult: { status: "failed" },
+      },
+    });
+
+    await app.close();
+  });
 });

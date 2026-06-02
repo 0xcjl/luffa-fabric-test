@@ -89,6 +89,17 @@ export function getQaChecks(cwd: string): QaCheckDefinition[] {
       env: { NEXT_PUBLIC_LAEL_API_URL: `http://127.0.0.1:${apiPort}` },
     },
     {
+      id: "multichain-docs-smoke",
+      label: "Multi-chain docs smoke",
+      command: process.execPath,
+      args: [
+        "-e",
+        `const { readFileSync } = require("node:fs"); const files = ["src/chains/registry.ts", "docs/LAEL_MULTICHAIN_WALLET_SUPPORT_TEST_REPORT_2026-06-02.zh.md", "src/frontend/app/project-docs-data.ts"]; const body = files.map((file) => readFileSync(file, "utf8")).join("\\n"); for (const phrase of ["BNB_TESTNET", "SOLANA_DEVNET", "ENDLESS_TESTNET", "Luffa App QR"]) { if (!body.includes(phrase)) throw new Error("missing " + phrase); } console.log("Multi-chain docs smoke passed");`,
+      ],
+      cwd,
+      timeoutMs: 30_000,
+    },
+    {
       id: "api-smoke",
       label: "API smoke test",
       command: process.execPath,

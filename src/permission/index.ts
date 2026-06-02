@@ -212,6 +212,32 @@ export class PermissionService {
     });
   }
 
+  recordExternalDecision(
+    request: PermissionEvaluationRequest,
+    input: {
+      decision: PermissionDecision["decision"];
+      reason: string;
+      matchedPolicyId?: string;
+      governanceRecord?: Record<string, unknown>;
+    },
+  ): PermissionDecision {
+    return this.writeDecision({
+      request: {
+        ...request,
+        context: {
+          ...(request.context ?? {}),
+          governanceRecord: input.governanceRecord,
+        },
+      },
+      decision: input.decision,
+      matchedPolicyId: input.matchedPolicyId,
+      riskScore: deriveRiskScore(request.riskLevel, request.context),
+      budget: deriveBudget(request.params, request.context),
+      requiresConfirmation: input.decision === "REQUIRES_CONFIRMATION",
+      reason: input.reason,
+    });
+  }
+
   private getActivePolicies(ownerRef: string): PermissionPolicy[] {
     const rows = this.database.db
       .prepare(

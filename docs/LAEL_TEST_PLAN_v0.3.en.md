@@ -10,6 +10,7 @@ Validate four paths in the Unified Agent Runtime Fabric MVP:
 | On-chain Transfer | wallet, payment-agent, settlement, ledger tests | Send a small Base Sepolia ETH transfer and inspect txHash/receipt |
 | On-chain Trading/Swap | simulated swap intent, permission, risk block tests | Enter a swap request and confirm it only creates a proposal, not a real trade |
 | Fiat / Proof Settlement | fiat-proof / invoice-proof record tests | Create a proof receipt and confirm no real payment occurs |
+| Governance / AGT Adapter | AGT allow, deny, requires confirmation, degraded fallback, receipt metadata tests | Inspect Governance Source, AGT decision record, and Evidence disclosure in Runtime Agent |
 
 ## Automated Test Commands
 
@@ -44,7 +45,7 @@ cd src/frontend
 NEXT_PUBLIC_LAEL_API_URL=http://127.0.0.1:3000 npm run build
 ```
 
-Acceptance: Next.js build succeeds. The current WalletConnect/pino optional warning is acceptable, but type errors or build failures are not.
+Acceptance: Next.js build succeeds, with no type errors, build failures, or current-capability copy that still references WalletConnect / Project ID.
 
 ### Frontend/Backend Smoke Test
 
@@ -134,3 +135,13 @@ After final acceptance, produce a test summary:
 - Uncovered risks.
 - Current known limitations.
 - Recommended next steps.
+
+## Multi-chain Wallet Support Test Addendum
+
+| Group | Automated Tests | Manual Tests |
+| --- | --- | --- |
+| BNB Testnet / OKX | chain registry, Payment Agent parser, EVM settlement receipt, wrong-chain policy block | Select BNB Testnet, click Add BNB to OKX, connect OKX, sign, and record txHash |
+| Solana Devnet | Solana chain registry, Ed25519 wallet binding, SOL intent parser, Solana settlement signature record | Connect a Solana wallet, bind public key, create SOL proposal, sign, and inspect receipt |
+| Endless Testnet / Luffa App | Endless chain registry, wallet-provided fullMessage verification, endless-native settlement, rejected authorization receipt | Use Luffa App / Endless SDK connect, signMessage, signAndSubmitTransaction; inspect failed evidence when authorization is rejected |
+| OKX Endless Boundary | Documentation tests confirm Endless is not described as an EVM add-network path | Inspect Wallet Setup and confirm Endless prioritizes Luffa App / Endless SDK |
+| Luffa App QR Next Phase | Documentation tests confirm QR session / callback / polling is listed as future-stage work | No standalone browser QR integration is claimed in the current MVP |

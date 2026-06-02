@@ -5,6 +5,13 @@ This directory contains the LAEL / Luffa Fabric v0.3 requirement, MVP, test-plan
 For a clear chronological reading order, start here:
 
 - [LAEL / Luffa Fabric v0.3 文档与测试报告时间线](./LAEL_DOCS_TIMELINE_v0.3.zh.md)
+- [Microsoft AGT 融入 Luffa Fabric 的总体评估与融合方案](./LAEL_AGT_INTEGRATION_v0.3.zh.md)
+
+## Frontend Project Docs
+
+The frontend `Project Docs` tab is the user-facing project documentation entry for demos, manual acceptance, and handoff. It summarizes the project positioning, architecture, execution loop, modules, operating steps, safety notes, document index, and test-report index.
+
+Documentation maintenance rule: 后续所有文档变更必须同步到 Project Docs.
 
 ## Recommended Reading Order
 
@@ -16,6 +23,13 @@ For a clear chronological reading order, start here:
 6. [第一轮测试报告：v0.3 文档与基础功能](./LAEL_TEST_REPORT_v0.3_2026-05-28.zh.md)
 7. [前端闭环与测试面板改进计划](./LAEL_FRONTEND_LOOP_IMPROVEMENT_PLAN_2026-05-29.zh.md)
 8. [第二轮测试报告：前端闭环与 QA Runner](./LAEL_FRONTEND_LOOP_TEST_REPORT_2026-05-29.zh.md)
+9. [Microsoft AGT 融合评估与 Adapter PoC](./LAEL_AGT_INTEGRATION_v0.3.zh.md)
+10. [Microsoft AGT 下一步接入评估](./LAEL_AGT_NEXT_STEP_EVALUATION_2026-06-02.zh.md)
+11. [Microsoft AGT 未来阶段落地规划](./LAEL_AGT_IMPLEMENTATION_PLAN_2026-06-02.zh.md)
+12. [Microsoft AGT 浏览器人工验收截图报告](./LAEL_AGT_BROWSER_ACCEPTANCE_REPORT_2026-06-02.zh.md)
+13. [Multi-chain Wallet Support Test Report](./LAEL_MULTICHAIN_WALLET_SUPPORT_TEST_REPORT_2026-06-02.zh.md)
+14. [项目迭代过程记录](./LAEL_PROJECT_ITERATION_HISTORY_2026-06-02.zh.md)
+15. [协作开发交接说明](./LAEL_COLLABORATION_HANDOFF_2026-06-02.zh.md)
 
 ## Report Mapping
 
@@ -23,5 +37,12 @@ For a clear chronological reading order, start here:
 |---|---|---|
 | `LAEL_TEST_REPORT_v0.3_2026-05-28.zh.md` | `LAEL_TEST_PLAN_v0.3.zh.md` / `LAEL_TEST_PLAN_v0.3.en.md` | v0.3 docs, API, VARR, simulated swap, fiat proof settlement |
 | `LAEL_FRONTEND_LOOP_TEST_REPORT_2026-05-29.zh.md` | `LAEL_FRONTEND_LOOP_IMPROVEMENT_PLAN_2026-05-29.zh.md` | Execution Loop Console, QA Runner, Evidence / Learning UI, browser acceptance |
+| `LAEL_AGT_INTEGRATION_v0.3.zh.md` | Microsoft AGT Adapter PoC tests | Governance Extension, AGT decision record, off-chain runtime guard |
+| `LAEL_AGT_NEXT_STEP_EVALUATION_2026-06-02.zh.md` | Follow-up AGT implementation planning | AGT sidecar, MCP gateway, fork gate, browser acceptance |
+| `LAEL_AGT_IMPLEMENTATION_PLAN_2026-06-02.zh.md` | Future-stage AGT landing plan | Current MVP keeps Adapter PoC only; sidecar, MCP gateway, and fork gate are future-stage work |
+| `LAEL_AGT_BROWSER_ACCEPTANCE_REPORT_2026-06-02.zh.md` | Browser manual acceptance | Execution Loop Console, Runtime Agent, AGT evidence, Learning UI screenshots |
+| `LAEL_MULTICHAIN_WALLET_SUPPORT_TEST_REPORT_2026-06-02.zh.md` | Multi-chain wallet support landing plan | BNB Testnet, Solana Devnet, Endless Testnet / Luffa App, OKX support boundary, Luffa App QR next-stage plan |
+| `LAEL_PROJECT_ITERATION_HISTORY_2026-06-02.zh.md` | Project iteration history | v0.1/v0.2 to v0.3, frontend loop, AGT, multi-chain wallet, collaboration baseline |
+| `LAEL_COLLABORATION_HANDOFF_2026-06-02.zh.md` | Collaboration handoff | GitHub branch, setup, validation, wallet boundaries, and collaboration rules |
 
 The second report does not replace the first report. They represent two different validation stages.

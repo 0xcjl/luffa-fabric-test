@@ -46,17 +46,18 @@ describe("local QA runner", () => {
       "root-vitest",
       "varr-tests",
       "frontend-build",
+      "multichain-docs-smoke",
       "api-smoke",
       "frontend-page-smoke",
     ]);
     expect(run.status).toBe("fail");
-    expect(run.items).toHaveLength(6);
+    expect(run.items).toHaveLength(7);
     expect(run.items[0]).toMatchObject({
       id: "root-typecheck",
       status: "pass",
       summary: "Root typecheck output",
     });
-    expect(run.items[5]).toMatchObject({
+    expect(run.items[6]).toMatchObject({
       id: "frontend-page-smoke",
       status: "fail",
       summary: "Frontend page smoke test output",

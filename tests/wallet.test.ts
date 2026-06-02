@@ -114,6 +114,32 @@ describe("wallet module", () => {
     lael.close();
   });
 
+  it("verifies Ed25519 wallets that sign a wallet-provided full message", async () => {
+    const lael = new LAEL({ path: ":memory:" });
+    const fixture = loadFixture<SolanaFixture>("solana-wallet.json");
+    const pending = lael.connectWallet({
+      ownerRef: "did:luffa:endless_full_message",
+      walletType: WalletType.LUFFA,
+      chainType: "endless",
+      address: fixture.publicKey,
+    });
+    const fullMessage = `Endless::Message\nmessage: ${pending.message}\nnonce: ${pending.nonce}`;
+    const signature = await lael.identity.signMessage(fixture.secretKey, fullMessage);
+    const binding = await lael.verifyWallet({
+      bindingId: pending.bindingId,
+      ownerRef: pending.ownerRef,
+      walletType: WalletType.LUFFA,
+      chainType: "endless",
+      address: fixture.publicKey,
+      nonce: pending.nonce,
+      signature,
+      signatureMessage: fullMessage,
+    });
+
+    expect(binding.verified).toBe(true);
+    lael.close();
+  });
+
   it("rejects invalid Solana signature", async () => {
     const lael = new LAEL({ path: ":memory:" });
     const fixture = loadFixture<SolanaFixture>("solana-wallet.json");

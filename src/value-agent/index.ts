@@ -146,7 +146,7 @@ export class ValueAgentMvpService {
 }
 
 function parseSwapIntent(rawInput: string): SwapIntent {
-  const amountMatch = rawInput.match(/(\d+(?:\.\d+)?)\s*([A-Z]{2,10})\s+(?:to|for|->)\s+([A-Z]{2,10})/i);
+  const amountMatch = rawInput.match(/(\d+(?:\.\d+)?)\s*([A-Z]{2,12})\s+(?:to|for|->)\s+([A-Z]{2,12})/i);
   const slippageMatch = rawInput.match(/slippage\s*(\d+(?:\.\d+)?)\s*%/i);
   return {
     action: "swap",
@@ -161,6 +161,8 @@ function parseSwapIntent(rawInput: string): SwapIntent {
 
 function parseChain(rawInput: string): string {
   const raw = rawInput.toLowerCase();
+  if (raw.includes("bnb") || raw.includes("bsc") || raw.includes("binance smart chain")) return "BNB_TESTNET";
+  if (raw.includes("endless") || raw.includes("luffa app")) return "ENDLESS_TESTNET";
   if (raw.includes("polygon")) return "POLYGON_AMOY";
   if (raw.includes("solana")) return "SOLANA_DEVNET";
   if (raw.includes("ethereum")) return "ETHEREUM_SEPOLIA";

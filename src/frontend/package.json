@@ -11,7 +11,8 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@rainbow-me/rainbowkit": "^2.2.3",
+    "@endlesslab/endless-ts-sdk": "^1.0.7",
+    "@luffalab/luffa-endless-sdk": "^1.1.9",
     "@solana/spl-token": "^0.4.9",
     "@solana/wallet-adapter-base": "^0.9.24",
     "@solana/wallet-adapter-phantom": "^0.9.24",

@@ -18,28 +18,74 @@ export class EndlessSettlementAdapter implements SettlementAdapter {
 
   async transfer(input: SettlementTransferInput): Promise<SettlementTransferResult> {
     const txHash = input.txHash ?? createMockTxHash({ adapter: "endless", input });
+    const authorizationStatus = input.appAuthorizationStatus ?? (input.txHash ? "approved" : "simulated");
+    const executionMode = input.executionMode ?? (input.txHash ? "app-authorized" : "sdk-ready");
     return {
-      status: "COMPLETED",
+      status: authorizationStatus === "rejected" || authorizationStatus === "unavailable" ? "FAILED" : "COMPLETED",
       txHash,
       chainType: this.chainType,
       chainId: String(this.chain.chainId),
+      appAuthorizationStatus: authorizationStatus,
+      executionMode,
       raw: {
-        mode: "adapter-abstraction",
+        mode: executionMode,
         rail: "luffa-wallet-proxy-reserved",
+        appAuthorizationStatus: authorizationStatus,
       },
     };
   }
 
   async verifyTransaction(txHash: string): Promise<TransactionVerification> {
-    return {
-      txHash,
-      chainType: this.chainType,
-      chainId: String(this.chain.chainId),
-      status: txHash ? "SUCCESS" : "NOT_FOUND",
-      raw: {
-        mode: "adapter-abstraction",
-      },
-    };
+    if (!txHash) {
+      return {
+        txHash,
+        chainType: this.chainType,
+        chainId: String(this.chain.chainId),
+        status: "NOT_FOUND",
+      };
+    }
+    if (this.chain.rpcUrl.startsWith("mock://") || txHash.startsWith("mock_")) {
+      return {
+        txHash,
+        chainType: this.chainType,
+        chainId: String(this.chain.chainId),
+        status: "SUCCESS",
+        raw: {
+          mode: "adapter-abstraction",
+        },
+      };
+    }
+
+    try {
+      const response = await fetch(`${this.chain.rpcUrl.replace(/\/$/, "")}/transactions/by_hash/${txHash}`);
+      if (response.status === 404) {
+        return {
+          txHash,
+          chainType: this.chainType,
+          chainId: String(this.chain.chainId),
+          status: "NOT_FOUND",
+        };
+      }
+      const body = (await response.json()) as { success?: boolean; version?: string; vm_status?: string };
+      return {
+        txHash,
+        chainType: this.chainType,
+        chainId: String(this.chain.chainId),
+        status: body.success === false ? "FAILED" : "SUCCESS",
+        blockNumber: body.version ? Number(body.version) : undefined,
+        raw: body as Record<string, unknown>,
+      };
+    } catch (error) {
+      return {
+        txHash,
+        chainType: this.chainType,
+        chainId: String(this.chain.chainId),
+        status: "UNKNOWN",
+        raw: {
+          error: error instanceof Error ? error.message : "Endless transaction verification failed",
+        },
+      };
+    }
   }
 
   async estimateFee(): Promise<string> {

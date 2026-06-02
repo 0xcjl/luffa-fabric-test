@@ -198,6 +198,8 @@ export class SettlementService {
           chainId: instruction.chainId,
           txHash: instruction.txHash,
           walletAddress: instruction.walletAddress,
+          appAuthorizationStatus: instruction.appAuthorizationStatus,
+          executionMode: instruction.executionMode,
           createdAt,
           schemaVersion: instruction.schemaVersion ?? DEFAULT_SCHEMA_VERSION,
           apiVersion: instruction.apiVersion ?? DEFAULT_API_VERSION,
@@ -222,6 +224,8 @@ export class SettlementService {
         chainId: instruction.chainId,
         txHash: instruction.txHash,
         walletAddress: instruction.walletAddress,
+        appAuthorizationStatus: instruction.appAuthorizationStatus,
+        executionMode: instruction.executionMode,
         createdAt: nowIso(),
         schemaVersion: instruction.schemaVersion ?? DEFAULT_SCHEMA_VERSION,
         apiVersion: instruction.apiVersion ?? DEFAULT_API_VERSION,
@@ -285,6 +289,8 @@ export class SettlementService {
         tokenAddress: instruction.tokenAddress,
         txHash: instruction.txHash,
         signedTransaction: instruction.signedTransaction,
+        appAuthorizationStatus: instruction.appAuthorizationStatus,
+        executionMode: instruction.executionMode,
         metadata: instruction.metadata,
       };
       const result = await adapter.transfer(input);
@@ -304,6 +310,8 @@ export class SettlementService {
         walletAddress: instruction.walletAddress ?? instruction.fromAddress,
         gasUsed: result.gasUsed,
         blockNumber: result.blockNumber,
+        appAuthorizationStatus: result.appAuthorizationStatus ?? instruction.appAuthorizationStatus,
+        executionMode: result.executionMode ?? instruction.executionMode,
         createdAt,
         schemaVersion: instruction.schemaVersion ?? DEFAULT_SCHEMA_VERSION,
         apiVersion: instruction.apiVersion ?? DEFAULT_API_VERSION,
@@ -325,6 +333,8 @@ export class SettlementService {
         chainId: instruction.chainId,
         txHash: instruction.txHash,
         walletAddress: instruction.walletAddress ?? instruction.fromAddress,
+        appAuthorizationStatus: instruction.appAuthorizationStatus,
+        executionMode: instruction.executionMode,
         createdAt: nowIso(),
         schemaVersion: instruction.schemaVersion ?? DEFAULT_SCHEMA_VERSION,
         apiVersion: instruction.apiVersion ?? DEFAULT_API_VERSION,
@@ -360,6 +370,8 @@ export class SettlementService {
       chainType: instruction.chainType,
       chainId: instruction.chainId,
       walletAddress: instruction.walletAddress ?? instruction.fromAddress,
+      appAuthorizationStatus: instruction.appAuthorizationStatus,
+      executionMode: instruction.executionMode,
       createdAt: nowIso(),
       schemaVersion: instruction.schemaVersion ?? DEFAULT_SCHEMA_VERSION,
       apiVersion: instruction.apiVersion ?? DEFAULT_API_VERSION,
@@ -457,6 +469,9 @@ function assertPositiveAmount(amount: number): void {
 function inferRailChainType(rail: SettlementInstruction["rail"]): ChainType {
   if (rail.startsWith("solana-")) {
     return "solana";
+  }
+  if (rail.startsWith("endless-")) {
+    return "endless";
   }
   return "evm";
 }

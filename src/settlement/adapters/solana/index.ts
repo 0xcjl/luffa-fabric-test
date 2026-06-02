@@ -43,6 +43,8 @@ export class SolanaSettlementAdapter implements SettlementAdapter {
       chainType: this.chainType,
       chainId: String(this.chain.chainId),
       blockNumber: verification.blockNumber,
+      appAuthorizationStatus: input.appAuthorizationStatus,
+      executionMode: input.executionMode,
       raw: verification.raw,
     };
   }

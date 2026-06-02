@@ -81,7 +81,7 @@ export function createMcpTools(lael: LAEL) {
           });
         }
         case "lael.invoke": {
-          return textResult(await lael.invoke(args as unknown as ExecutionRequest));
+          return textResult(await lael.invoke(withMcpGovernanceContext(args, name)));
         }
         case "lael.get_execution": {
           const executionId = String(args.executionId);
@@ -105,6 +105,7 @@ export function createMcpTools(lael: LAEL) {
                 ...(args as unknown as Omit<ExecutionRequest, "action" | "params">),
                 action: name,
                 params,
+                context: buildMcpGovernanceContext(args, name),
               }),
             );
           }
@@ -119,6 +120,31 @@ export function createMcpTools(lael: LAEL) {
   }
 
   return { tools, callTool };
+}
+
+function withMcpGovernanceContext(args: Record<string, unknown>, toolName: string): ExecutionRequest {
+  const request = args as unknown as ExecutionRequest;
+  return {
+    ...request,
+    context: buildMcpGovernanceContext(args, toolName),
+  };
+}
+
+function buildMcpGovernanceContext(args: Record<string, unknown>, toolName: string): Record<string, unknown> {
+  const existing = objectLike(args.context) ?? {};
+  const effectiveToolName = typeof existing.toolName === "string" ? existing.toolName : toolName;
+  return {
+    ...existing,
+    toolName: effectiveToolName,
+    mcpToolName: toolName,
+    governanceSurface: "mcp_tool_call",
+    riskContext: {
+      ...(objectLike(existing.riskContext) ?? {}),
+      ...(objectLike(args.riskContext) ?? {}),
+      toolName: effectiveToolName,
+      intent: typeof args.action === "string" ? args.action : effectiveToolName,
+    },
+  };
 }
 
 function executionSchema(): McpTool["inputSchema"] {

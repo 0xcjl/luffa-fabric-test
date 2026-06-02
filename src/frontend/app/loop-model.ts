@@ -39,6 +39,8 @@ export type EvidenceInput = {
   rawInput?: string;
   walletAddress?: string;
   simulated?: boolean;
+  appAuthorizationStatus?: "approved" | "rejected" | "unavailable" | "simulated";
+  executionMode?: string;
 };
 
 export type EvidenceClassification = {
@@ -142,6 +144,14 @@ export function deriveLoopSteps(input: LoopModelInput): LoopStep[] {
 }
 
 export function classifyEvidence(input: EvidenceInput): EvidenceClassification {
+  if (input.appAuthorizationStatus === "rejected" || input.appAuthorizationStatus === "unavailable") {
+    return {
+      onChainStatus: "Simulated proof",
+      sensitivity: "Internal",
+      disclosure: "仅内部",
+      note: "App authorization did not complete, so this is evidence of a blocked or rejected execution path.",
+    };
+  }
   if (input.txHash) {
     return {
       onChainStatus: "On-chain tx",

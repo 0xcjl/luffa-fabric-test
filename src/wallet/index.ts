@@ -126,11 +126,12 @@ export class WalletService {
       address,
       nonce: input.nonce,
     });
+    const signatureMessage = input.signatureMessage ?? message;
     const verified = await verifyWalletSignature({
       walletType: input.walletType,
       chainType: input.chainType,
       address,
-      message,
+      message: signatureMessage,
       signature: input.signature,
     });
     if (!verified) {

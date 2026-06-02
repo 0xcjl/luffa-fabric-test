@@ -22,6 +22,7 @@ The MVP is not split into two products. It is one unified LAEL Runtime Fabric wi
 
 - Agent DID mapping.
 - Permission decision card.
+- Governance source: Luffa Native Policy / Microsoft AGT Adapter / Combined.
 - Execution receipt.
 - Trace / evidence digest.
 - Settlement record.
@@ -54,6 +55,13 @@ Failure paths:
 - Cross namespace -> denied receipt.
 - High-risk publish -> pending approval receipt.
 - Forbidden action -> denied before adapter execution.
+
+AGT Adapter PoC:
+
+- low-risk summary -> AGT `ALLOW` -> Luffa receipt metadata records the AGT decision record.
+- destructive / private-context tool -> AGT `DENY` -> Luffa denied receipt.
+- publish / delegate / high-risk tool -> AGT `REQUIRES_CONFIRMATION` -> no execution, human-confirmation boundary preserved.
+- AGT unavailable -> fallback to Luffa Native Policy and record degraded evidence.
 
 ## User Story B: On-chain Value Execution / Transfer
 
@@ -118,8 +126,23 @@ This proves that fiat can enter LAEL as settlement proof without turning the MVP
 | Capability | Current Status |
 | --- | --- |
 | VARR runtime | Sidecar runtime, capability, context, receipt, and learning tests exist. |
-| Payment Agent transfer | Base Sepolia ETH/USDC proposal, wallet signing, receipt, feedback, and memory exist. |
-| Settlement adapter | Luffa Points, EVM native, EVM ERC20, Solana, Endless mock/adapter abstraction exists. |
-| Swap proposal | Simulated value-agent flow to be added. |
-| Fiat/invoice proof | Proof settlement rails to be added. |
-| Frontend dual-path demo | Tabs to be added: Runtime Agent, On-chain Value Agent, Evidence / Learning. |
+| Payment Agent transfer | Base Sepolia ETH/USDC, BNB Testnet, Solana Devnet, and Endless Testnet / Luffa App proposal, wallet signing / app authorization, receipt, feedback, and memory exist. |
+| Settlement adapter | Luffa Points, EVM native, EVM ERC20, Solana native / SPL abstraction, and Endless native / Luffa App authorization abstraction exist. |
+| Swap proposal | Simulated value-agent flow exists and does not connect to a real DEX. |
+| Fiat/invoice proof | Proof settlement rails exist and do not connect to real Stripe, banks, or on/off-ramp providers. |
+| Frontend dual-path demo | Execution Loop Console, Runtime Agent, On-chain Value Agent, Evidence / Learning, and Project Docs exist. |
+
+## Multi-chain Wallet Support
+
+| Network | MVP Depth | Wallet / Authorization Path | Notes |
+| --- | --- | --- | --- |
+| Base Sepolia / Base Mainnet | Sepolia supports real EVM wallet signature plus txHash receipt; Mainnet supports connection, proposal, and permission display only | MetaMask / OKX Wallet | Base Sepolia remains the default primary demo chain; Mainnet real execution is disabled by default. |
+| BNB Testnet / BNB Mainnet | Testnet supports real EVM wallet signature plus txHash receipt; Mainnet supports connection, proposal, and permission display only | MetaMask / OKX Wallet | Frontend provides Add BNB Testnet to OKX action; Mainnet real execution is disabled by default. |
+| Solana Devnet / Solana Mainnet | Devnet supports wallet binding plus signature receipt; Mainnet supports connection, proposal, and permission display only | Phantom / Solana Wallet | Current scope prioritizes SOL native; real SPL token transfer is future expansion. |
+| Endless Testnet / Luffa App | Luffa App / Endless SDK connect, signMessage, signAndSubmitTransaction | `@luffalab/luffa-endless-sdk` | Endless is not handled as an EVM add-network flow. |
+
+Current boundaries:
+
+- Native OKX Endless support requires OKX to expose an Endless provider or support the Endless Wallet Standard.
+- Standalone Luffa App QR authorization requires an app-side QR session, callback, or polling protocol.
+- Mainnet real-value execution is not the current MVP default path.

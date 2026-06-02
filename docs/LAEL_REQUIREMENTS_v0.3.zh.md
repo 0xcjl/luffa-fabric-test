@@ -47,6 +47,20 @@ Identity -> Permission -> Execution -> Settlement -> Evidence -> Feedback -> Lea
 | Governable | 学习和自动化不能突破权限、安全、隐私、支付和审批边界。 |
 | Open Infrastructure | 深度长在 Luffa 上，但通过标准接口服务外部生态。 |
 
+## Governance Extension / Microsoft AGT Adapter
+
+LAEL 的 Permission 层应保持可插拔。Microsoft AGT 可以作为 Permission / Governance Extension Layer 中的一个外接治理积木，用于补强 policy enforcement、tool call interception、audit decision record、MCP security gateway、runtime guard 和 SRE / kill switch。
+
+AGT 不替代 Luffa Fabric 核心协议，也不替代 Luffa DID / Mapping DID、wallet signing、settlement、Execution Receipt、Learning 或 reputation。第一阶段只作为可选 adapter 接入；默认权限模块仍是 Luffa Native Policy。
+
+| AGT 能力 | Luffa 对应层 | 第一阶段处理 |
+| --- | --- | --- |
+| Policy Engine | Permission Extension | 可选 adapter。 |
+| Tool Call Interception | Execution Extension | 优先用于链下 Agent / MCP tool guard。 |
+| Audit Decision Record | Evidence Extension | 映射进 Luffa receipt metadata。 |
+| Sandbox / Runtime Guard | Execution Extension | 后续可接入。 |
+| SRE / Kill Switch | Governance Extension | 后续可接入。 |
+
 ## 统一架构
 
 LAEL 采用“链下执行，链上可验证，链上价值执行”的统一架构。

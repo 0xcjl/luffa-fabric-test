@@ -22,6 +22,7 @@ MVP 不拆成两个产品，而是在一个统一 LAEL Runtime Fabric 下提供�
 
 - Agent DID mapping。
 - Permission decision card。
+- Governance source：Luffa Native Policy / Microsoft AGT Adapter / Combined。
 - Execution receipt。
 - Trace / evidence digest。
 - Settlement record。
@@ -54,6 +55,13 @@ LAEL 执行：
 - cross namespace -> denied receipt。
 - high-risk publish -> pending approval receipt。
 - forbidden action -> denied before adapter execution。
+
+AGT Adapter PoC：
+
+- low-risk summary -> AGT `ALLOW` -> Luffa receipt metadata 记录 AGT decision record。
+- destructive / private-context tool -> AGT `DENY` -> Luffa denied receipt。
+- publish / delegate / high-risk tool -> AGT `REQUIRES_CONFIRMATION` -> 不执行，保留人工确认边界。
+- AGT unavailable -> fallback to Luffa Native Policy，并记录 degraded evidence。
 
 ## 用户故事 B：On-chain Value Execution / Transfer
 
@@ -118,8 +126,23 @@ Michael 为一次 Agent 服务创建 invoice/payment proof。系统不连接真�
 | 能力 | 当前状态 |
 | --- | --- |
 | VARR runtime | 已有 sidecar runtime、capability、context、receipt、learning tests。 |
-| Payment Agent transfer | 已有 Base Sepolia ETH/USDC proposal、wallet signing、receipt、feedback、memory。 |
-| Settlement adapter | 已有 Luffa Points、EVM native、EVM ERC20、Solana、Endless mock/adapter abstraction。 |
-| Swap proposal | 待补 simulated value-agent flow。 |
-| Fiat/invoice proof | 待补 proof settlement rails。 |
-| 前端双路径演示 | 待补 tabs：Runtime Agent、On-chain Value Agent、Evidence / Learning。 |
+| Payment Agent transfer | 已有 Base Sepolia ETH/USDC、BNB Testnet、Solana Devnet、Endless Testnet / Luffa App proposal、wallet signing / app authorization、receipt、feedback、memory。 |
+| Settlement adapter | 已有 Luffa Points、EVM native、EVM ERC20、Solana native / SPL abstraction、Endless native / Luffa App authorization abstraction。 |
+| Swap proposal | 已有 simulated value-agent flow，不接真实 DEX。 |
+| Fiat/invoice proof | 已有 proof settlement rails，不接真实 Stripe、银行或 on/off-ramp provider。 |
+| 前端双路径演示 | 已有 Execution Loop Console、Runtime Agent、On-chain Value Agent、Evidence / Learning、Project Docs。 |
+
+## 多链钱包支持
+
+| 网络 | MVP 深度 | 钱包/授权路径 | 备注 |
+| --- | --- | --- | --- |
+| Base Sepolia / Base Mainnet | Sepolia 支持真实 EVM 钱包签名 + txHash receipt；Mainnet 只做连接、proposal 和 permission 展示 | MetaMask / OKX Wallet | Base Sepolia 仍是默认主演示链；Mainnet 真实执行默认禁用。 |
+| BNB Testnet / BNB Mainnet | Testnet 支持真实 EVM 钱包签名 + txHash receipt；Mainnet 只做连接、proposal 和 permission 展示 | MetaMask / OKX Wallet | 前端提供 Add BNB Testnet to OKX 操作；Mainnet 真实执行默认禁用。 |
+| Solana Devnet / Solana Mainnet | Devnet 支持 wallet binding + signature receipt；Mainnet 只做连接、proposal 和 permission 展示 | Phantom / Solana Wallet | 当前优先支持 SOL native，SPL token 真实转账后续扩展。 |
+| Endless Testnet / Luffa App | Luffa App / Endless SDK connect、signMessage、signAndSubmitTransaction | `@luffalab/luffa-endless-sdk` | Endless 不按 EVM add-network 处理。 |
+
+当前边界：
+
+- OKX Endless 原生支持需要 OKX 公开 Endless provider 或支持 Endless Wallet Standard。
+- Luffa App 独立二维码授权需要 App 端 QR session、callback 或 polling 协议。
+- Mainnet 真实价值执行不作为当前 MVP 默认路径。

@@ -70,6 +70,11 @@ describe("frontend execution loop model", () => {
       sensitivity: "Internal",
       disclosure: "仅内部",
     });
+    expect(classifyEvidence({ appAuthorizationStatus: "rejected", executionMode: "sdk-ready" })).toMatchObject({
+      onChainStatus: "Simulated proof",
+      sensitivity: "Internal",
+      disclosure: "仅内部",
+    });
   });
 
   it("derives learning items with visible priority and safety boundaries", () => {

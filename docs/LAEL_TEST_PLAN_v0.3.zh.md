@@ -10,6 +10,7 @@
 | On-chain Transfer | wallet、payment-agent、settlement、ledger tests | Base Sepolia ETH 小额转账，查看 txHash/receipt |
 | On-chain Trading/Swap | simulated swap intent、permission、risk block tests | 输入 swap 请求，确认只生成 proposal，不真实交易 |
 | Fiat / Proof Settlement | fiat-proof / invoice-proof record tests | 创建 proof receipt，确认没有真实支付动作 |
+| Governance / AGT Adapter | AGT allow、deny、requires confirmation、degraded fallback、receipt metadata tests | Runtime Agent 中查看 Governance Source、AGT decision record、Evidence disclosure |
 
 ## 自动化测试命令
 
@@ -44,7 +45,7 @@ cd src/frontend
 NEXT_PUBLIC_LAEL_API_URL=http://127.0.0.1:3000 npm run build
 ```
 
-验收：Next.js build 成功；可接受当前 WalletConnect/pino optional warning，但不能有类型错误或构建失败。
+验收：Next.js build 成功；不能有类型错误、构建失败或 WalletConnect / Project ID 当前能力文案残留。
 
 ### 前端/后端 smoke test
 
@@ -134,3 +135,13 @@ curl -sS http://127.0.0.1:3000/v2/payment-agent/memory/did:luffa:user_001
 - 未覆盖风险。
 - 当前已知限制。
 - 后续建议。
+
+## 多链钱包支持测试补充
+
+| 组 | 自动化测试 | 人工测试 |
+| --- | --- | --- |
+| BNB Testnet / OKX | chain registry、Payment Agent parser、EVM settlement receipt、wrong-chain policy block | 选择 BNB Testnet，点击 Add BNB to OKX，连接 OKX，签名并记录 txHash |
+| Solana Devnet | Solana chain registry、Ed25519 wallet binding、SOL intent parser、Solana settlement signature record | 连接 Solana wallet，绑定 public key，生成 SOL proposal，签名并查看 receipt |
+| Endless Testnet / Luffa App | Endless chain registry、wallet-provided fullMessage 验签、endless-native settlement、rejected authorization receipt | 使用 Luffa App / Endless SDK connect、signMessage、signAndSubmitTransaction；拒绝授权时查看失败 evidence |
+| OKX Endless 边界 | 文档测试确认 Endless 不被描述为 EVM add-network | 查看 Wallet Setup，确认 Endless 优先走 Luffa App / Endless SDK |
+| Luffa App QR 下一阶段 | 文档测试确认 QR session / callback / polling 被列为未来阶段 | 当前不做独立浏览器二维码联调 |

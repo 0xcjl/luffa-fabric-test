@@ -1,5 +1,7 @@
 import type { LAEL } from "../core/index.js";
-import type { SettlementAsset } from "../settlement/types.js";
+import { getChainConfig } from "../chains/index.js";
+import type { ChainType } from "../chains/types.js";
+import type { SettlementAsset, SettlementExecutionMode, SettlementRail, WalletAuthorizationStatus } from "../settlement/types.js";
 import { newId, nowIso, parseJson, stableJson } from "../utils.js";
 
 const PAYMENT_AGENT_EXTERNAL_ID_PREFIX = "luffa-fabric-payment-agent:v0.2";
@@ -35,6 +37,9 @@ export interface ExecutePaymentProposalInput {
   humanConfirmed: boolean;
   txHash?: string;
   signedTransaction?: string;
+  walletType?: string;
+  appAuthorizationStatus?: WalletAuthorizationStatus;
+  executionMode?: SettlementExecutionMode;
 }
 
 export interface SubmitPaymentFeedbackInput {
@@ -89,7 +94,12 @@ export interface PaymentExecutionReceipt {
   permissionDecision: PaymentPermissionDecision;
   walletTx: {
     chainKey: string;
+    chainType?: ChainType;
+    walletType?: string;
     txHash?: string;
+    signature?: string;
+    executionMode?: SettlementExecutionMode;
+    appAuthorizationStatus?: WalletAuthorizationStatus;
     walletAddress: string;
   };
   settlementResult: {
@@ -240,7 +250,7 @@ export class PaymentAgentMvpService {
           payeeDid: `did:luffa:recipient:${proposal.parsedIntent.recipientName}`,
           amount: proposal.parsedIntent.amount,
           asset: proposal.parsedIntent.asset,
-          rail: railForAsset(proposal.parsedIntent.asset),
+          rail: railForIntent(proposal.parsedIntent),
           chainKey: proposal.parsedIntent.chainKey,
           walletAddress: proposal.walletAddress,
           toAddress: proposal.parsedIntent.recipientAddress,
@@ -248,6 +258,8 @@ export class PaymentAgentMvpService {
             proposal.parsedIntent.asset === "USDC" ? DUMMY_USDC_BASE_SEPOLIA : undefined,
           txHash: input.txHash,
           signedTransaction: input.signedTransaction,
+          appAuthorizationStatus: input.appAuthorizationStatus,
+          executionMode: input.executionMode,
         },
       },
       rawInput: proposal.rawInput,
@@ -266,11 +278,16 @@ export class PaymentAgentMvpService {
       permissionDecision: proposal.permissionDecision,
       walletTx: {
         chainKey: proposal.parsedIntent.chainKey,
+        chainType: getChainConfig(proposal.parsedIntent.chainKey)?.chainType,
+        walletType: input.walletType,
         txHash: result.txHash,
+        signature: input.signedTransaction,
+        executionMode: input.executionMode,
+        appAuthorizationStatus: input.appAuthorizationStatus,
         walletAddress: proposal.walletAddress,
       },
       settlementResult: {
-        status: String(result.settlementStatus ?? "unknown").toLowerCase(),
+        status: deriveSettlementStatus(result, input.appAuthorizationStatus),
         settlementId: result.settlementId,
       },
       learningStatus: { status: "pending_feedback" },
@@ -382,6 +399,7 @@ export class PaymentAgentMvpService {
       permissionDecision: proposal.permissionDecision,
       walletTx: {
         chainKey: proposal.parsedIntent.chainKey,
+        chainType: getChainConfig(proposal.parsedIntent.chainKey)?.chainType,
         txHash: this.lael.getExecutionRecord(executionId)?.txHash,
         walletAddress: proposal.walletAddress,
       },
@@ -596,7 +614,7 @@ function parseTransferIntent(
 ): { intent: TransferIntent; memoryKeys: string[] } {
   const raw = input.rawInput;
   const memoryKeys: string[] = [];
-  const amountMatch = raw.match(/(\d+(?:\.\d+)?)\s*(USDC|USDT|ETH|SOL)?/i);
+  const amountMatch = raw.match(/(\d+(?:\.\d+)?)\s*(USDC|USDT|ETH|BNB|SOL|EDS)?/i);
   const amount = amountMatch
     ? Number(amountMatch[1])
     : memory.preferred_amount ?? 0;
@@ -653,6 +671,8 @@ function parseTransferIntent(
 function parseExplicitChain(rawInput: string): string | undefined {
   const raw = rawInput.toLowerCase();
   if (raw.includes("base sepolia")) return "BASE_SEPOLIA";
+  if (raw.includes("bnb") || raw.includes("bsc") || raw.includes("binance smart chain")) return "BNB_TESTNET";
+  if (raw.includes("endless") || raw.includes("luffa app")) return "ENDLESS_TESTNET";
   if (raw.includes("polygon")) return "POLYGON_AMOY";
   if (raw.includes("solana")) return "SOLANA_DEVNET";
   if (raw.includes("ethereum")) return "ETHEREUM_SEPOLIA";
@@ -806,8 +826,27 @@ function isConfirmationBypassAttempt(rawInput: string): boolean {
   );
 }
 
-function railForAsset(asset: string): "evm-native" | "evm-erc20" {
-  return (asset as SettlementAsset) === "ETH" ? "evm-native" : "evm-erc20";
+function railForIntent(intent: TransferIntent): SettlementRail {
+  const chainType = getChainConfig(intent.chainKey)?.chainType;
+  if (chainType === "solana") {
+    return intent.asset.toUpperCase() === "SOL" ? "solana-native" : "solana-spl";
+  }
+  if (chainType === "endless") {
+    return "endless-native";
+  }
+  return (intent.asset as SettlementAsset) === "ETH" || intent.asset.toUpperCase() === "BNB"
+    ? "evm-native"
+    : "evm-erc20";
+}
+
+function deriveSettlementStatus(
+  result: { settlementStatus?: unknown; status?: unknown },
+  appAuthorizationStatus?: string,
+): string {
+  if (appAuthorizationStatus === "rejected" || appAuthorizationStatus === "unavailable") {
+    return "failed";
+  }
+  return String(result.settlementStatus ?? result.status ?? "unknown").toLowerCase();
 }
 
 function parseUnknownRecipient(rawInput: string): PaymentAgentRecipient | undefined {

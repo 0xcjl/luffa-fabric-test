@@ -6,8 +6,10 @@ export type SettlementAsset =
   | "ETH"
   | "USDC"
   | "USDT"
+  | "BNB"
   | "SOL"
-  | "SPL_TOKEN";
+  | "SPL_TOKEN"
+  | "EDS";
 
 export type SettlementRail =
   | "luffa-points"
@@ -18,7 +20,11 @@ export type SettlementRail =
   | "evm-native"
   | "evm-erc20"
   | "solana-native"
-  | "solana-spl";
+  | "solana-spl"
+  | "endless-native";
+
+export type WalletAuthorizationStatus = "approved" | "rejected" | "unavailable" | "simulated";
+export type SettlementExecutionMode = "real" | "simulated" | "sdk-ready" | "app-authorized";
 
 export type SettlementStatus = "PENDING" | "COMPLETED" | "FAILED" | "ROLLED_BACK";
 
@@ -39,6 +45,8 @@ export interface SettlementInstruction {
   tokenAddress?: string;
   txHash?: string;
   signedTransaction?: string;
+  appAuthorizationStatus?: WalletAuthorizationStatus;
+  executionMode?: SettlementExecutionMode;
   metadata?: Record<string, unknown>;
   schemaVersion?: string;
   apiVersion?: string;
@@ -60,6 +68,8 @@ export interface SettlementRecord {
   walletAddress?: string;
   gasUsed?: string;
   blockNumber?: number;
+  appAuthorizationStatus?: WalletAuthorizationStatus;
+  executionMode?: SettlementExecutionMode;
   createdAt: string;
   schemaVersion: string;
   apiVersion: string;
@@ -78,6 +88,8 @@ export interface SettlementTransferInput {
   tokenAddress?: string;
   txHash?: string;
   signedTransaction?: string;
+  appAuthorizationStatus?: WalletAuthorizationStatus;
+  executionMode?: SettlementExecutionMode;
   metadata?: Record<string, unknown>;
 }
 
@@ -88,6 +100,8 @@ export interface SettlementTransferResult {
   chainId: string;
   gasUsed?: string;
   blockNumber?: number;
+  appAuthorizationStatus?: WalletAuthorizationStatus;
+  executionMode?: SettlementExecutionMode;
   raw?: Record<string, unknown>;
 }
 

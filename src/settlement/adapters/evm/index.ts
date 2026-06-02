@@ -28,8 +28,23 @@ export class EvmSettlementAdapter implements SettlementAdapter {
   }
 
   async transfer(input: SettlementTransferInput): Promise<SettlementTransferResult> {
+    if (input.txHash) {
+      return {
+        status: "COMPLETED",
+        txHash: input.txHash,
+        chainType: this.chainType,
+        chainId: input.chainId,
+        gasUsed: input.rail === "evm-erc20" ? "65000" : "21000",
+        appAuthorizationStatus: input.appAuthorizationStatus,
+        executionMode: input.executionMode ?? "real",
+        raw: {
+          mode: "wallet-provided-txhash",
+          chainKey: input.chainKey,
+        },
+      };
+    }
+
     const txHash =
-      input.txHash ??
       (input.signedTransaction
         ? await jsonRpc<string>(this.chain.rpcUrl, "eth_sendRawTransaction", [
             input.signedTransaction,
@@ -41,9 +56,11 @@ export class EvmSettlementAdapter implements SettlementAdapter {
       status: verification.status === "FAILED" ? "FAILED" : "COMPLETED",
       txHash,
       chainType: this.chainType,
-      chainId: String(this.chain.chainId),
+      chainId: input.chainId,
       gasUsed: verification.gasUsed,
       blockNumber: verification.blockNumber,
+      appAuthorizationStatus: input.appAuthorizationStatus,
+      executionMode: input.executionMode,
       raw: verification.raw,
     };
   }

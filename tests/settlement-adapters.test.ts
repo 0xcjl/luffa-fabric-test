@@ -119,6 +119,34 @@ describe("settlement adapters", () => {
     db.close();
   });
 
+  it("records BNB testnet wallet-provided txHash through the EVM rail", async () => {
+    const db = createDb({ path: ":memory:" });
+    const settlement = new SettlementService(db);
+    settlement.registerDefaultAdapters();
+    const bnb = await settlement.settle({
+      executionId: "exec_bnb",
+      payerDid: "did:luffa:payer",
+      payeeDid: "did:luffa:payee",
+      asset: "BNB",
+      amount: 0.001,
+      rail: "evm-native",
+      chainKey: "BNB_TESTNET",
+      walletAddress: evmInput.fromAddress,
+      toAddress: evmInput.toAddress,
+      txHash: "0xbnbtesttx001",
+      executionMode: "real",
+      appAuthorizationStatus: "approved",
+    });
+
+    expect(bnb.status).toBe("COMPLETED");
+    expect(bnb.chainType).toBe("evm");
+    expect(bnb.chainId).toBe("97");
+    expect(bnb.txHash).toBe("0xbnbtesttx001");
+    expect(bnb.executionMode).toBe("real");
+    expect(bnb.appAuthorizationStatus).toBe("approved");
+    db.close();
+  });
+
   it("rolls back ERC20 transfers with missing token address or forced mock failure", async () => {
     const db = createDb({ path: ":memory:" });
     const settlement = new SettlementService(db);
@@ -184,6 +212,48 @@ describe("settlement adapters", () => {
     expect(sol.txHash).toMatch(/^mock_/);
     expect(spl.txHash).toMatch(/^mock_/);
     expect((await settlement.verifyTransaction(sol.txHash ?? "", "solana", "devnet")).status).toBe("SUCCESS");
+    db.close();
+  });
+
+  it("records Endless Luffa App authorization outcomes", async () => {
+    const db = createDb({ path: ":memory:" });
+    const settlement = new SettlementService(db);
+    settlement.registerDefaultAdapters();
+    const approved = await settlement.settle({
+      executionId: "exec_endless_approved",
+      payerDid: "did:luffa:payer",
+      payeeDid: "did:luffa:payee",
+      asset: "EDS",
+      amount: 1,
+      rail: "endless-native",
+      chainKey: "ENDLESS_TESTNET",
+      walletAddress: "0x0000000000000000000000000000000000000000000000000000000000000001",
+      toAddress: "0x0000000000000000000000000000000000000000000000000000000000000002",
+      txHash: "0xendlesstesttx001",
+      executionMode: "app-authorized",
+      appAuthorizationStatus: "approved",
+    });
+    const rejected = await settlement.settle({
+      executionId: "exec_endless_rejected",
+      payerDid: "did:luffa:payer",
+      payeeDid: "did:luffa:payee",
+      asset: "EDS",
+      amount: 1,
+      rail: "endless-native",
+      chainKey: "ENDLESS_TESTNET",
+      walletAddress: "0x0000000000000000000000000000000000000000000000000000000000000001",
+      toAddress: "0x0000000000000000000000000000000000000000000000000000000000000002",
+      executionMode: "sdk-ready",
+      appAuthorizationStatus: "rejected",
+    });
+
+    expect(approved.status).toBe("COMPLETED");
+    expect(approved.chainType).toBe("endless");
+    expect(approved.chainId).toBe("221");
+    expect(approved.txHash).toBe("0xendlesstesttx001");
+    expect(approved.executionMode).toBe("app-authorized");
+    expect(rejected.status).toBe("FAILED");
+    expect(rejected.appAuthorizationStatus).toBe("rejected");
     db.close();
   });
 

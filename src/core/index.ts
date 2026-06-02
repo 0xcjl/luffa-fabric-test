@@ -11,6 +11,7 @@ import type {
   RegisterAgentInput,
   UpdateAgentMetadataInput,
 } from "../identity/types.js";
+import type { GovernanceAdapter, GovernanceDecisionRecord } from "../governance/index.js";
 import { LearningService } from "../learning/index.js";
 import type { Reputation, RLHFExportRecord } from "../learning/types.js";
 import { PermissionService } from "../permission/index.js";
@@ -34,6 +35,7 @@ import { newId, sha256Hex } from "../utils.js";
 
 export interface LaelOptions extends DbOptions {
   db?: LaelDb;
+  governanceAdapter?: GovernanceAdapter;
 }
 
 export interface InvokeResult extends ExecutionRecord {
@@ -49,6 +51,7 @@ export class LAEL {
   readonly settlement: SettlementService;
   readonly learning: LearningService;
   readonly wallet: WalletService;
+  readonly governance?: GovernanceAdapter;
 
   constructor(options: LaelOptions = {}) {
     this.db = options.db ?? createDb({ path: options.path });
@@ -59,6 +62,7 @@ export class LAEL {
     this.settlement.registerDefaultAdapters();
     this.learning = new LearningService(this.db);
     this.wallet = new WalletService(this.db);
+    this.governance = options.governanceAdapter;
   }
 
   registerAgent(input: RegisterAgentInput): Promise<AgentIdentifier> {
@@ -196,6 +200,39 @@ export class LAEL {
       return record;
     }
 
+    const governanceDecision = await this.evaluateGovernance(agent, requestWithId, decision.decision);
+    if (governanceDecision && governanceDecision.decision !== "ALLOW") {
+      const executableRequest = { ...requestWithId, agentId: agent.internalId };
+      const externalDecision = this.permission.recordExternalDecision(
+        {
+          agentId: agent.internalId,
+          ownerRef: agent.ownerRef,
+          action: requestWithId.action,
+          params: requestWithId.params,
+          context: requestWithId.context,
+          riskLevel: agent.riskLevel,
+        },
+        {
+          decision: governanceDecision.decision,
+          matchedPolicyId: "microsoft-agt-adapter",
+          reason: governanceDecision.reason,
+          governanceRecord: governanceDecision as unknown as Record<string, unknown>,
+        },
+      );
+      const record = this.execution.recordDenied(
+        executableRequest,
+        externalDecision,
+        {
+          error: governanceDecision.reason,
+          decision: governanceDecision.decision,
+          requiresConfirmation: governanceDecision.decision === "REQUIRES_CONFIRMATION",
+          governanceDecision,
+        },
+      );
+      this.execution.recordIdempotency(requestWithId.idempotencyKey, record.executionId, agent.internalId);
+      return record;
+    }
+
     const walletBindingError = this.getWalletBindingError(agent, requestWithId, executionId);
     if (walletBindingError) {
       const executableRequest = { ...requestWithId, agentId: agent.internalId };
@@ -262,7 +299,7 @@ export class LAEL {
               : enrichedResult;
 
           return {
-            result: finalResult,
+            result: governanceDecision ? { ...finalResult, governanceDecision } : finalResult,
             status,
             settlementId: settlementRecord?.settlementId,
             chainType: settlementRecord?.chainType,
@@ -436,6 +473,32 @@ export class LAEL {
 
     return undefined;
   }
+
+  private async evaluateGovernance(
+    agent: AgentIdentifier,
+    request: ExecutionRequest,
+    nativeDecision: "ALLOW" | "DENY" | "REQUIRES_CONFIRMATION",
+  ): Promise<GovernanceDecisionRecord | undefined> {
+    if (!this.governance) {
+      return undefined;
+    }
+
+    return this.governance.evaluate({
+      mappingDid: agent.ownerRef,
+      agentDid: agent.internalId,
+      externalAgentId: agent.externalId,
+      action: request.action,
+      toolName: stringValue(request.context?.toolName) ?? stringValue(request.params.toolName) ?? request.action,
+      params: request.params,
+      riskContext: {
+        ...(objectLike(request.context?.riskContext) ?? {}),
+        riskLevel: agent.riskLevel,
+        contextSensitivity: request.context?.contextSensitivity,
+        promptInjectionDetected: request.context?.promptInjectionDetected,
+      },
+      nativeDecision,
+    });
+  }
 }
 
 function objectLike(value: unknown): Record<string, unknown> | undefined {
@@ -523,3 +586,4 @@ export * from "../settlement/types.js";
 export * from "../learning/types.js";
 export * from "../wallet/index.js";
 export * from "../chains/index.js";
+export * from "../governance/index.js";

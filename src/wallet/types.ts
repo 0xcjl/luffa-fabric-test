@@ -48,4 +48,5 @@ export interface VerifyWalletInput {
   address: string;
   nonce: string;
   signature: string;
+  signatureMessage?: string;
 }

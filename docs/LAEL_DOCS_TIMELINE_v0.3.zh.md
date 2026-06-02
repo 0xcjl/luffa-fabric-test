@@ -14,6 +14,13 @@
 6. `LAEL_TEST_REPORT_v0.3_2026-05-28.zh.md`
 7. `LAEL_FRONTEND_LOOP_IMPROVEMENT_PLAN_2026-05-29.zh.md`
 8. `LAEL_FRONTEND_LOOP_TEST_REPORT_2026-05-29.zh.md`
+9. `LAEL_AGT_INTEGRATION_v0.3.zh.md`
+10. `LAEL_AGT_NEXT_STEP_EVALUATION_2026-06-02.zh.md`
+11. `LAEL_AGT_IMPLEMENTATION_PLAN_2026-06-02.zh.md`
+12. `LAEL_AGT_BROWSER_ACCEPTANCE_REPORT_2026-06-02.zh.md`
+13. `LAEL_MULTICHAIN_WALLET_SUPPORT_TEST_REPORT_2026-06-02.zh.md`
+14. `LAEL_PROJECT_ITERATION_HISTORY_2026-06-02.zh.md`
+15. `LAEL_COLLABORATION_HANDOFF_2026-06-02.zh.md`
 
 ## 2. 时间线总表
 
@@ -27,6 +34,13 @@
 | 6 | 第一轮测试结果 | `LAEL_TEST_REPORT_v0.3_2026-05-28.zh.md` | `LAEL_TEST_PLAN_v0.3.zh.md` / `LAEL_TEST_PLAN_v0.3.en.md` | 本文件即测试报告 | 覆盖 v0.3 文档、API、VARR、swap、fiat proof |
 | 7 | 前端闭环改进计划 | `LAEL_FRONTEND_LOOP_IMPROVEMENT_PLAN_2026-05-29.zh.md` | 前端闭环测试项写入该计划 | `LAEL_FRONTEND_LOOP_TEST_REPORT_2026-05-29.zh.md` | 规划 Execution Loop Console 和测试面板 |
 | 8 | 第二轮测试结果 | `LAEL_FRONTEND_LOOP_TEST_REPORT_2026-05-29.zh.md` | `LAEL_FRONTEND_LOOP_IMPROVEMENT_PLAN_2026-05-29.zh.md` | 本文件即测试报告 | 覆盖前端闭环、QA Runner、浏览器验收 |
+| 9 | Microsoft AGT 融合评估 | `LAEL_AGT_INTEGRATION_v0.3.zh.md` | `LAEL_TEST_PLAN_v0.3.zh.md` / `LAEL_TEST_PLAN_v0.3.en.md` | 后续 AGT PoC 测试结果 | 说明 AGT 是 Governance Extension 积木，不是 Luffa 核心依赖 |
+| 10 | Microsoft AGT 下一步评估 | `LAEL_AGT_NEXT_STEP_EVALUATION_2026-06-02.zh.md` | `LAEL_AGT_IMPLEMENTATION_PLAN_2026-06-02.zh.md` | 后续浏览器验收报告 | 评估 sidecar、MCP gateway、fork gate、browser report |
+| 11 | Microsoft AGT 未来阶段落地规划 | `LAEL_AGT_IMPLEMENTATION_PLAN_2026-06-02.zh.md` | 本文件定义未来阶段测试方向 | 后续浏览器验收报告 | 当前 MVP 只保留 Adapter PoC、前端展示和 evidence mapping；sidecar、MCP gateway、fork gate 留到未来阶段 |
+| 12 | Microsoft AGT 浏览器验收 | `LAEL_AGT_BROWSER_ACCEPTANCE_REPORT_2026-06-02.zh.md` | `LAEL_AGT_IMPLEMENTATION_PLAN_2026-06-02.zh.md` | 本文件即验收报告 | 覆盖 Execution Loop Console、Runtime Agent、AGT evidence、Learning UI |
+| 13 | 多链钱包支持 | `LAEL_MULTICHAIN_WALLET_SUPPORT_TEST_REPORT_2026-06-02.zh.md` | `LAEL_TEST_PLAN_v0.3.zh.md` / Project Docs 多链章节 | 本文件即测试报告 | 覆盖 BNB Testnet、Solana Devnet、Endless Testnet / Luffa App、OKX 支持边界、Luffa App QR 下一阶段规划 |
+| 14 | 项目迭代过程 | `LAEL_PROJECT_ITERATION_HISTORY_2026-06-02.zh.md` | 本时间线和各阶段测试报告 | 本文件记录迭代过程 | 说明从 v0.1/v0.2 到 v0.3、前端闭环、AGT、多链钱包和协作基线的演进 |
+| 15 | 协作开发交接 | `LAEL_COLLABORATION_HANDOFF_2026-06-02.zh.md` | 本文件内验证命令 | 后续协作测试报告 | 给同事说明 GitHub 分支、运行方式、验证命令、钱包边界和协作规则 |
 
 ## 3. 文档分组说明
 
@@ -58,6 +72,10 @@
 > 注意：第二份前端测试报告不替代第一份 v0.3 测试报告。两者分别对应不同阶段，必须同时保留。
 
 ## 4. 对应关系说明
+
+### 4.0 Microsoft AGT 融合评估
+
+`LAEL_AGT_INTEGRATION_v0.3.zh.md` 说明 Microsoft AGT 在 Luffa Fabric 中的定位是 Permission / Governance Extension Layer 的可选治理积木。它对应新增的 AGT Adapter PoC 测试，用于验证 AGT allow / deny / requires confirmation / degraded fallback 如何映射进 Luffa permission decision、execution receipt metadata 和 evidence。
 
 ### 4.1 新框架梳理对应的测试
 
@@ -134,9 +152,13 @@
 | 第一轮测试报告 | `LAEL_TEST_REPORT_v0.3_2026-05-28.zh.md` |
 | 前端闭环计划 | `LAEL_FRONTEND_LOOP_IMPROVEMENT_PLAN_2026-05-29.zh.md` |
 | 第二轮测试报告 | `LAEL_FRONTEND_LOOP_TEST_REPORT_2026-05-29.zh.md` |
+| 多链钱包测试报告 | `LAEL_MULTICHAIN_WALLET_SUPPORT_TEST_REPORT_2026-06-02.zh.md` |
+| 项目迭代过程 | `LAEL_PROJECT_ITERATION_HISTORY_2026-06-02.zh.md` |
+| 协作交接 | `LAEL_COLLABORATION_HANDOFF_2026-06-02.zh.md` |
 
 ## 6. 后续维护规则
 
+- 前端 `Project Docs` 是演示、验收和交接使用的项目文档入口；后续所有文档变更必须同步到 Project Docs。
 - 新增需求文档时，必须在本时间线中补一行。
 - 新增测试报告时，必须明确它对应哪一份计划或测试方案。
 - 不要用后一份测试报告覆盖前一份测试报告。

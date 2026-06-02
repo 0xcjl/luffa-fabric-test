@@ -11,6 +11,7 @@ export * from "./settlement/adapters/index.js";
 export * from "./wallet/index.js";
 export * from "./chains/index.js";
 export * from "./learning/index.js";
+export * from "./governance/index.js";
 export * from "./api/server.js";
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
