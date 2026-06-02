@@ -130,7 +130,7 @@ cd src/frontend && NEXT_PUBLIC_LAEL_API_URL=http://127.0.0.1:3000 npm run build
 最近一次完整验证：
 
 - TypeScript root check：通过。
-- Root vitest：17 files / 129 tests 通过。
+- Root vitest：17 files / 130 tests 通过。
 - VARR tests：31 tests 通过。
 - Frontend build：通过。
 
