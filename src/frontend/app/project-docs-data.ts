@@ -123,6 +123,7 @@ export const projectDocsSections: ProjectDocSection[] = [
     summary: "仓库 docs/ 是长期备案源，前端 Project Docs 是面向演示和验收的阅读入口。",
     items: [
       "需求文档、MVP 文档、测试方案、测试报告、AGT 评估和浏览器验收报告都应在 docs/ 中保留。",
+      "根目录 NEXT_SESSION_HANDOFF.md 是新会话继续开发的固定入口，后续每次重要迭代提交前必须更新。",
       "第一轮测试报告和第二轮前端闭环测试报告不能互相覆盖。",
       "AGT 评估、实施计划和浏览器验收截图报告需要单独标明阶段和结论。",
       "Project Docs 只说明 Evidence / Learning 的模块含义，不显示 live execution evidence、learning、测试面板或 JSON 状态。",
@@ -132,6 +133,11 @@ export const projectDocsSections: ProjectDocSection[] = [
 ];
 
 export const projectDocsIndex: ProjectDocIndexItem[] = [
+  {
+    type: "Next Session",
+    file: "NEXT_SESSION_HANDOFF.md",
+    note: "新会话继续开发的根目录固定入口，包含启动提示词、当前分支、必读文档、验证命令和维护规则。",
+  },
   {
     type: "Requirements",
     file: "LAEL_REQUIREMENTS_v0.3.zh.md / LAEL_REQUIREMENTS_v0.3.en.md",

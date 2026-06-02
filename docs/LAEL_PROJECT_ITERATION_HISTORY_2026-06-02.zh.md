@@ -26,6 +26,7 @@
 | AGT 下一阶段规划 | 2026-06-02 | Sidecar / MCP Gateway / fork gate | 当前 MVP 只保留 Adapter PoC；真实 AGT runtime、MCP Security Gateway、fork 改造进入未来阶段 | `LAEL_AGT_NEXT_STEP_EVALUATION_2026-06-02.zh.md`, `LAEL_AGT_IMPLEMENTATION_PLAN_2026-06-02.zh.md` |
 | 多链钱包支持 | 2026-06-02 | Base / BNB / Solana / Endless | 增加主网和测试网展示，支持 MetaMask / OKX、Phantom、Luffa App / Endless SDK 入口 | `LAEL_MULTICHAIN_WALLET_SUPPORT_TEST_REPORT_2026-06-02.zh.md` |
 | 协作交接 | 2026-06-02 | 同事协作基线 | 形成 GitHub 分支、文档入口、运行方式、验证命令和协作边界说明 | `LAEL_COLLABORATION_HANDOFF_2026-06-02.zh.md` |
+| 下一会话交接 | 2026-06-02 | 新会话固定入口 | 新增根目录 `NEXT_SESSION_HANDOFF.md`，用于后续在新 Codex 会话中快速恢复项目上下文 | `NEXT_SESSION_HANDOFF.md` |
 
 ## 阶段说明
 
@@ -138,6 +139,25 @@ Identity -> Permission -> Execution -> Settlement -> Evidence -> Feedback -> Lea
 - Endless 不按 EVM add-network 处理。
 - Luffa App 独立扫码授权需要 App 端 QR session / callback / polling 协议，进入下一阶段。
 
+### 7. 下一会话交接入口
+
+为了避免长上下文影响后续开发，项目新增根目录 `NEXT_SESSION_HANDOFF.md`。
+
+它的作用：
+
+- 作为新会话第一入口，而不是完整 PRD。
+- 提供可复制的新会话启动提示词。
+- 汇总本地路径、GitHub fork、当前分支、已推送基线 commit。
+- 指向必读文档、当前能力、安全边界和验证命令。
+- 明确后续每次重要迭代提交前都必须更新本文件。
+
+该文档与以下文件配合使用：
+
+- `docs/README.md`：完整文档入口。
+- `docs/LAEL_DOCS_TIMELINE_v0.3.zh.md`：时间线和报告映射。
+- `docs/LAEL_COLLABORATION_HANDOFF_2026-06-02.zh.md`：协作开发交接。
+- 前端 `Project Docs`：面向演示和验收的项目说明。
+
 ## 当前架构结论
 
 当前 LAEL / Luffa Fabric 的 MVP 不是单一转账产品，而是统一的 Agent Runtime Fabric：
@@ -165,6 +185,7 @@ Mapping DID / Luffa DID
 4. AGT sidecar / MCP Security Gateway 的下一阶段 PoC。
 5. 浏览器截图验收报告。
 6. Project Docs 与 docs/ 时间线持续同步。
+7. `NEXT_SESSION_HANDOFF.md` 持续维护，保证新会话可以快速恢复上下文。
 
 ## 后续更新规则
 
@@ -179,5 +200,7 @@ Mapping DID / Luffa DID
 | 测试 | 通过了哪些自动化 / 人工测试 |
 | 边界 | 哪些内容仍是下一阶段 |
 | 文档 | 新增或更新了哪些文档 |
+
+如果本次迭代影响新会话上下文，还必须更新 `NEXT_SESSION_HANDOFF.md`。
 
 本文件是项目演进记录，不替代需求文档、MVP 文档和测试报告。

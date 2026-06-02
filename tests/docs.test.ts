@@ -5,6 +5,7 @@ const docs = [
   {
     path: "docs/README.md",
     phrases: [
+      "NEXT_SESSION_HANDOFF.md",
       "LAEL_DOCS_TIMELINE_v0.3.zh.md",
       "LAEL_AGT_INTEGRATION_v0.3.zh.md",
       "LAEL_AGT_NEXT_STEP_EVALUATION_2026-06-02.zh.md",
@@ -23,6 +24,7 @@ const docs = [
   {
     path: "docs/LAEL_DOCS_TIMELINE_v0.3.zh.md",
     phrases: [
+      "NEXT_SESSION_HANDOFF.md",
       "LAEL_MVP_NEW_FRAMEWORK_OVERVIEW_2026-05-28.zh.md",
       "LAEL_FRAMEWORK_DOCS_IMPLEMENTATION_PLAN_2026-05-28.zh.md",
       "LAEL_FRONTEND_LOOP_IMPROVEMENT_PLAN_2026-05-29.zh.md",
@@ -33,6 +35,7 @@ const docs = [
       "LAEL_MULTICHAIN_WALLET_SUPPORT_TEST_REPORT_2026-06-02.zh.md",
       "LAEL_PROJECT_ITERATION_HISTORY_2026-06-02.zh.md",
       "LAEL_COLLABORATION_HANDOFF_2026-06-02.zh.md",
+      "下一会话交接入口",
       "Microsoft AGT 未来阶段落地规划",
       "当前 MVP 只保留 Adapter PoC、前端展示和 evidence mapping",
       "LAEL_TEST_REPORT_v0.3_2026-05-28.zh.md",
@@ -107,11 +110,24 @@ const docs = [
   },
   {
     path: "docs/LAEL_PROJECT_ITERATION_HISTORY_2026-06-02.zh.md",
-    phrases: ["项目迭代过程记录", "v0.1 / v0.2", "统一 Runtime Fabric", "Microsoft AGT 融合", "多链钱包支持"],
+    phrases: ["项目迭代过程记录", "v0.1 / v0.2", "统一 Runtime Fabric", "Microsoft AGT 融合", "多链钱包支持", "NEXT_SESSION_HANDOFF.md"],
   },
   {
     path: "docs/LAEL_COLLABORATION_HANDOFF_2026-06-02.zh.md",
     phrases: ["协作开发交接说明", "codex/varr-api-route-fixes", "验证命令", "钱包和网络边界", "协作规则"],
+  },
+  {
+    path: "NEXT_SESSION_HANDOFF.md",
+    phrases: [
+      "NEXT SESSION HANDOFF",
+      "https://github.com/0xcjl/luffa-fabric-test",
+      "codex/varr-api-route-fixes",
+      "docs/README.md",
+      "docs/LAEL_DOCS_TIMELINE_v0.3.zh.md",
+      "docs/LAEL_PROJECT_ITERATION_HISTORY_2026-06-02.zh.md",
+      "./node_modules/.bin/tsc -p tsconfig.json --noEmit",
+      "后续每次重要迭代提交前，必须更新本文件",
+    ],
   },
 ];
 

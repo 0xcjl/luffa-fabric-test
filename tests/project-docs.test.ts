@@ -49,6 +49,7 @@ describe("frontend Project Docs data", () => {
   it("indexes the key docs and test reports shown in the frontend", () => {
     const indexText = projectDocsIndex.map((item) => `${item.file}: ${item.note}`).join("\n");
 
+    expect(indexText).toContain("NEXT_SESSION_HANDOFF.md");
     expect(indexText).toContain("LAEL_REQUIREMENTS_v0.3.zh.md");
     expect(indexText).toContain("LAEL_MVP_v0.3.zh.md");
     expect(indexText).toContain("LAEL_TEST_PLAN_v0.3.zh.md");
