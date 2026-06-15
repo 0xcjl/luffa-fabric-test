@@ -69,8 +69,9 @@ Rules:
 20. [本会话开发、验证与测试报告](./LAEL_SESSION_DEV_VERIFICATION_REPORT_2026-06-09.zh.md)
 21. [P0/P1/P2 Native App / Wallet / Reward Verification Report](./LAEL_P0_P1_P2_NATIVE_APP_REWARD_VERIFICATION_REPORT_2026-06-12.zh.md)
 22. [Endless Web Wallet Session Report](./LAEL_ENDLESS_WEB_WALLET_SESSION_REPORT_2026-06-15.zh.md)
-23. [项目迭代过程记录](./LAEL_PROJECT_ITERATION_HISTORY_2026-06-02.zh.md)
-24. [协作开发交接说明](./LAEL_COLLABORATION_HANDOFF_2026-06-02.zh.md)
+23. [本会话完整测试与验证报告](./LAEL_SESSION_FULL_TEST_AND_VERIFICATION_REPORT_2026-06-15.zh.md)
+24. [项目迭代过程记录](./LAEL_PROJECT_ITERATION_HISTORY_2026-06-02.zh.md)
+25. [协作开发交接说明](./LAEL_COLLABORATION_HANDOFF_2026-06-02.zh.md)
 
 ## Report Mapping
 
@@ -91,6 +92,7 @@ Rules:
 | `LAEL_SESSION_DEV_VERIFICATION_REPORT_2026-06-09.zh.md` | Session development / verification report | Current session development, manual evidence, service status, validation record, and paused HyperFrames voiceover refresh handoff |
 | `LAEL_P0_P1_P2_NATIVE_APP_REWARD_VERIFICATION_REPORT_2026-06-12.zh.md` | P0/P1/P2 native app / wallet / reward verification | luffa-endless-auth:v1, signed Luffa App QR / WebView callback, Base/BNB/Solana/Endless manual evidence targets, and Task Reward business scenario |
 | `LAEL_ENDLESS_WEB_WALLET_SESSION_REPORT_2026-06-15.zh.md` | Endless Web Wallet session verification | Records the June 15 Endless Web Wallet path, wallet binding/publicKey fix, Task Reward 0.001 EDS proposal, current service status, and remaining blocker where wallet Confirm stays disabled before txHash |
+| `LAEL_SESSION_FULL_TEST_AND_VERIFICATION_REPORT_2026-06-15.zh.md` | Full session test and verification report | Consolidates this session's P0/P1/P2 manual tests, automated validation, GitHub publishing result, service checks, and unfinished items including the Endless Web Wallet txHash blocker |
 | `LAEL_PROJECT_ITERATION_HISTORY_2026-06-02.zh.md` | Project iteration history | v0.1/v0.2 to v0.3, frontend loop, AGT, multi-chain wallet, collaboration baseline |
 | `LAEL_COLLABORATION_HANDOFF_2026-06-02.zh.md` | Collaboration handoff | GitHub branch, setup, validation, wallet boundaries, and collaboration rules |
 | `NEXT_SESSION_HANDOFF.md` | Next session entrypoint | Root handoff prompt, current branch, required docs, validation commands, and maintenance rules |

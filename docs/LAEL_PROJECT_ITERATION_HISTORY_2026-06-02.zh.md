@@ -282,6 +282,7 @@ Identity -> Permission -> Execution -> Settlement -> Evidence -> Feedback -> Lea
 
 - `docs/LAEL_P0_P1_P2_NATIVE_APP_REWARD_VERIFICATION_REPORT_2026-06-12.zh.md`
 - `docs/LAEL_ENDLESS_WEB_WALLET_SESSION_REPORT_2026-06-15.zh.md`
+- `docs/LAEL_SESSION_FULL_TEST_AND_VERIFICATION_REPORT_2026-06-15.zh.md`
 
 仍需手工补齐：
 
