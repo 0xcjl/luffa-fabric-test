@@ -119,6 +119,22 @@ describe("settlement adapters", () => {
     db.close();
   });
 
+  it("verifies Endless mainnet transactions against the requested chain id", async () => {
+    const db = createDb({ path: ":memory:" });
+    const settlement = new SettlementService(db);
+    settlement.registerDefaultAdapters();
+    const verification = await settlement.verifyTransaction(
+      "G1eVEi3JxrmPuoEjdXc1hLNuwqB9TscAVQzxo6vG5iid",
+      "endless",
+      "220",
+    );
+
+    expect(verification.status).toBe("SUCCESS");
+    expect(verification.chainType).toBe("endless");
+    expect(verification.chainId).toBe("220");
+    db.close();
+  });
+
   it("records BNB testnet wallet-provided txHash through the EVM rail", async () => {
     const db = createDb({ path: ":memory:" });
     const settlement = new SettlementService(db);

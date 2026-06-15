@@ -32,6 +32,7 @@ Rules:
 - The `/scan` page is single-session guarded: after a signed callback is submitted, repeated WebView reloads show the submitted status instead of triggering another Luffa App signing prompt.
 - Real App acceptance requires `callbackLocalOnly=false`, `callbackSource=qr_scan_callback` or `webview_bridge`, and `signatureVerified=true`.
 - Before every real Luffa App scan, run `npm run health:luffa-app`. The check verifies local API, local frontend, public callback runtime config, repeated public HTTPS probes, and a temporary QR `/scan` page. If it fails, do not scan; restart Cloudflare Tunnel / API and generate a fresh QR.
+- June 15 parser retest: with API, frontend, and `https://lael.clawworld.eu.cc` all online, the phone App still rejected JSON QR, `luffa-endless-auth:v1` compatible JSON, and minimal `protocol=luffa-endless-auth` key=value login QR as invalid. The minimal login session stayed `waiting` and `/debug` had no events, so the blocker is the App-side QR parser/schema before any network callback. Do not repeat scans until the App-accepted QR schema or deep link format is confirmed.
 
 ## Endless Web Wallet Execution
 
@@ -41,9 +42,15 @@ Rules:
 
 - Frontend dependency: `@endlesslab/endless-web3-sdk`.
 - Browser wallet path: `EndlessJsSdk.connect()` -> `signMessage()` for DID binding -> `signAndSubmitTransaction()` for real value execution.
-- Endless transfer payload must use a real Endless address, `AccountAddress.fromBs58String(recipient)`, `BigInt(amount * 1e8)`, and ABI parameters `address` / `u128`.
+- Endless transfer payload must use a real Endless address, `AccountAddress.fromBs58String(recipient)`, `BigInt(amount * 1e8)`, ABI parameters `address` / `u128`, and explicit wallet transaction options `maxGasAmount` / `gasUnitPrice` / `expireTimestamp`.
+- The Task Reward validation recipient is Alice's fixed Endless address `6XtEwYbTZ7PPNnFogtg6crSwXc8S8P53TqWEaSBassxw`; connecting a sender wallet must not silently turn the reward into a self-transfer.
+- The frontend explicitly opens the Endless Web Wallet modal before `connect()` or `signAndSubmitTransaction()` so wallet authorization is visible instead of staying in a hidden iframe.
+- Before requesting wallet confirmation, the frontend checks the sender account's EDS balance with `getAccountEDSAmount` and blocks the request if balance is below the reward amount plus gas budget. This is a preflight only; it does not replace the real wallet confirmation or txHash.
+- June 15 mainnet follow-up: after the user explicitly allowed a small Endless Mainnet EDS test, the local API gate was opened with `LAEL_ENABLE_MAINNET_EXECUTION=true` and `LAEL_MAINNET_MAX_AMOUNT_ETH=0.001`. The active Chrome wallet account is `EYWRWEnLGxgpYVVQd2Tq74iMtHUYSas4qKG3SzrpkZr2`; after the user recharged it, direct Endless Mainnet SDK balance query returned `10 EDS`. The 0.001 EDS Task Reward completed through Endless Web Wallet with real txHash `G1eVEi3JxrmPuoEjdXc1hLNuwqB9TscAVQzxo6vG5iid`, receipt `exec_00e02bbd-dc7a-467f-bb1e-4fcb4464e21e`, settlement `completed`, feedback submitted, and learning updated.
+- Chain receipt verification: `/v2/settlement/tx/:txHash?chainType=endless&chainId=220` must use Endless Mainnet RPC, not the default Endless Testnet adapter. The June 15 txHash resolves to `status=SUCCESS`, `blockNumber=188036997`, sender `EYWRWEnLGxgpYVVQd2Tq74iMtHUYSas4qKG3SzrpkZr2`, recipient `6XtEwYbTZ7PPNnFogtg6crSwXc8S8P53TqWEaSBassxw`, payload amount `100000` base units, and `vm_status=Executed successfully`.
 - Receipt `walletType=endless-web-wallet` and `executionMode=real` means a real Web Wallet txHash was returned. `walletType=luffa` and `executionMode=app-authorized` means the Luffa App QR/WebView path returned the authorization / tx evidence.
 - Luffa App bridge failures such as empty `rawData`, `errorMsg=1006/1009`, or `GeneralError.invalidParameter` should be treated as App bridge payload compatibility issues, not Cloudflare callback issues, once login and signed callback verification are already passing.
+- Luffa App QR parser failures such as “invalid QR” with no `/scan` or callback event should be treated as a separate App QR schema compatibility issue, not a bridge transaction failure.
 
 ## Recommended Reading Order
 
@@ -91,7 +98,7 @@ Rules:
 | `LAEL_INTERNAL_TECHNICAL_ONE_PAGER_2026-06-06.zh.md` | Internal technical one-pager | One-page internal technical summary covering runtime fabric positioning, verified MVP capabilities, evidence, safety boundaries, risks, and next steps |
 | `LAEL_SESSION_DEV_VERIFICATION_REPORT_2026-06-09.zh.md` | Session development / verification report | Current session development, manual evidence, service status, validation record, and paused HyperFrames voiceover refresh handoff |
 | `LAEL_P0_P1_P2_NATIVE_APP_REWARD_VERIFICATION_REPORT_2026-06-12.zh.md` | P0/P1/P2 native app / wallet / reward verification | luffa-endless-auth:v1, signed Luffa App QR / WebView callback, Base/BNB/Solana/Endless manual evidence targets, and Task Reward business scenario |
-| `LAEL_ENDLESS_WEB_WALLET_SESSION_REPORT_2026-06-15.zh.md` | Endless Web Wallet session verification | Records the June 15 Endless Web Wallet path, wallet binding/publicKey fix, Task Reward 0.001 EDS proposal, current service status, and remaining blocker where wallet Confirm stays disabled before txHash |
+| `LAEL_ENDLESS_WEB_WALLET_SESSION_REPORT_2026-06-15.zh.md` | Endless Web Wallet session verification | Records the June 15 Endless Web Wallet path, wallet binding/publicKey fix, Task Reward 0.001 EDS proposal, mainnet 0.001 EDS follow-up, active-wallet balance preflight, real txHash, receipt, feedback, and learning |
 | `LAEL_SESSION_FULL_TEST_AND_VERIFICATION_REPORT_2026-06-15.zh.md` | Full session test and verification report | Consolidates this session's P0/P1/P2 manual tests, automated validation, GitHub publishing result, service checks, and unfinished items including the Endless Web Wallet txHash blocker |
 | `LAEL_PROJECT_ITERATION_HISTORY_2026-06-02.zh.md` | Project iteration history | v0.1/v0.2 to v0.3, frontend loop, AGT, multi-chain wallet, collaboration baseline |
 | `LAEL_COLLABORATION_HANDOFF_2026-06-02.zh.md` | Collaboration handoff | GitHub branch, setup, validation, wallet boundaries, and collaboration rules |

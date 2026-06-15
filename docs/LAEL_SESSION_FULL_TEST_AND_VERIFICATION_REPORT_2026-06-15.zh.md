@@ -162,21 +162,51 @@ reason=Within policy; explicit wallet confirmation required
 - 前端不再把 mock txHash 当作真实链上完成。
 - Endless 路径要求真实 txHash 或明确 signed authorization evidence。
 
-未完成点：
+阶段性未完成点：
 
-- Task Reward 的真实链上 txHash 仍未完成。
-- 当前卡在 Endless Web Wallet confirm 灰色，不能点击。
-- 因此完整 P2 仍停在：
+- 初始 Task Reward 真实链上 txHash 曾未完成。
+- 当时卡在 Endless Web Wallet confirm 灰色，不能点击。
+- 因此该阶段 P2 停在：
 
 ```text
 proposal -> wallet confirmation pending
 ```
 
-尚未达到：
+当时尚未达到：
+
+追加完成记录（2026-06-15 后续主网小额测试）：
+
+- 用户明确允许使用 Endless Mainnet EDS 做 0.001 EDS 小额真实测试。
+- 活动 sender `EYWRWEnLGxgpYVVQd2Tq74iMtHUYSas4qKG3SzrpkZr2` 充值后，经 Endless Mainnet SDK 查询余额为 `10 EDS`。
+- 用户在已注册 Web Wallet 的 Chrome 会话中完成真实钱包确认。
+- Task Reward 收款人为 Alice `6XtEwYbTZ7PPNnFogtg6crSwXc8S8P53TqWEaSBassxw`。
+- 返回真实 txHash：`G1eVEi3JxrmPuoEjdXc1hLNuwqB9TscAVQzxo6vG5iid`。
+- Receipt：`exec_00e02bbd-dc7a-467f-bb1e-4fcb4464e21e`，`settlement=completed`，`mode=real`。
+- Feedback submitted；learning updated；agent score `0.93 -> 0.94`。
+
+因此 Endless Web Wallet 主网 lane 已达到：
 
 ```text
 proposal -> real wallet confirmation -> real txHash -> receipt -> feedback -> learning
 ```
+
+### 2.5 Luffa App QR parser 复测
+
+在恢复 API、frontend、`https://lael.clawworld.eu.cc` public callback，并确认 `npm run health:luffa-app` 返回 `ok: true` 后，本轮继续测试 Luffa App 扫码入口。
+
+已复测：
+
+- JSON QR payload。
+- `protocol=luffa-endless-auth:v1` 兼容 JSON payload。
+- `protocol=luffa-endless-auth` / `version=v1` key=value 最小 login QR。
+
+结果：
+
+- 手机端提示“无效二维码”。
+- 最小 login session `endless_qr_d96f0a34-89b2-44b3-a893-7e46afad942b` 在有效期内保持 `waiting`。
+- `/debug` events 为空，没有 `/scan`、`/claim` 或 `/callback` 请求进入 API。
+
+结论：当前阻塞点是 Luffa App 本地 QR parser/schema，不是 Cloudflare callback、session 过期或交易 payload。继续真实 App 扫码前，需要 App 侧提供实际接受的 QR schema / deep link 格式。
 
 ## 3. 自动化验证
 
@@ -353,7 +383,7 @@ POST /v2/wallet/verify -> 200
 4. 用户解锁钱包。
 5. 等待 `Confirm` 按钮可点击。
 
-当前结果：
+阶段性结果：
 
 ```text
 Confirm 按钮保持灰色
@@ -361,10 +391,11 @@ Confirm 按钮保持灰色
 无 txHash 返回
 ```
 
-结论：
+阶段性结论：
 
-- 真实交易未完成。
-- 目前不是 LAEL receipt 记录失败，而是钱包确认阶段没有完成。
+- 当时真实交易未完成。
+- 当时不是 LAEL receipt 记录失败，而是钱包确认阶段没有完成。
+- 后续主网小额测试已通过 Endless Web Wallet 完成真实 txHash；Luffa App bridge 真实交易仍未完成，继续归类为 App bridge payload/schema 兼容问题。
 
 ## 5. 服务与公网状态检查
 

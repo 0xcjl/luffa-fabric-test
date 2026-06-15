@@ -273,6 +273,9 @@ Identity -> Permission -> Execution -> Settlement -> Evidence -> Feedback -> Lea
 - 真实 Luffa App callback 必须提交 `publicKey/fullMessage/signature` 并通过 session nonce 验签。
 - 2026-06-15 调试结论：Luffa App QR 登录和 signed callback 可以通过，但 Task Reward 真实交易在 App WebView bridge 的 `packageTransactionV2` / `signAndSubmitTransaction` 路径反复返回空 `rawData`、`1006/1009` 或 `GeneralError.invalidParameter`。该问题归类为 App bridge payload 兼容，不再继续用反复扫码验证真实 txHash。
 - 为完成 P1/P2 真实链上闭环，浏览器 Endless transfer / task_reward 新增官方 Endless Web Wallet SDK 路径：`connect` / `signMessage` / `signAndSubmitTransaction`，payload 使用 Endless bs58 地址、`AccountAddress.fromBs58String`、`u128` 金额和 ABI type tags；receipt 以 `walletType=endless-web-wallet`、`executionMode=real` 区分。
+- 后续继续推进时恢复了 `https://lael.clawworld.eu.cc` public callback，并修复 Endless Web Wallet 前端交互细节：显式调用 `sdk.open()` 让钱包 modal 可见，Task Reward 默认收款人固定为 Alice 的 Endless 地址 `6XtEwYbTZ7PPNnFogtg6crSwXc8S8P53TqWEaSBassxw`，`signAndSubmitTransaction` 增加 `maxGasAmount`、`gasUnitPrice`、`expireTimestamp` options，并在请求钱包确认前用 `getAccountEDSAmount` 检查 sender EDS 余额。该修复只推进钱包确认条件，未把无 txHash 状态标记为真实链上完成。
+- 用户明确允许 Endless Mainnet EDS 小额测试后，本地 API 仅以 `LAEL_MAINNET_MAX_AMOUNT_ETH=0.001` 打开主网 gate；前端生成 Endless Mainnet Task Reward proposal 并使用已注册 Web Wallet 账户 `EYWRWEnLGxgpYVVQd2Tq74iMtHUYSas4qKG3SzrpkZr2` 预检余额。该账户充值后经 Endless Mainnet SDK 查询为 `10 EDS`，用户完成真实 Web Wallet 确认后返回 txHash `G1eVEi3JxrmPuoEjdXc1hLNuwqB9TscAVQzxo6vG5iid`，receipt `exec_00e02bbd-dc7a-467f-bb1e-4fcb4464e21e`，settlement completed，feedback submitted，learning updated。
+- 后续补强 `/v2/settlement/tx/:txHash` 验证路径：当传入 `chainId=220` 时使用 Endless Mainnet RPC，而不是默认 Endless Testnet adapter。该 txHash 链上查询返回 `status=SUCCESS`、`blockNumber=188036997`、sender / recipient / payload amount 与 0.001 EDS Task Reward 一致。
 - WebView bridge 和 QR scan 复用同一个 callback endpoint。
 - Mock callback 只保留为 `protocol_mock`，不能算真实 App 联调。
 - Payment Agent proposal / receipt 增加 `businessAction=task_reward`。
@@ -287,9 +290,10 @@ Identity -> Permission -> Execution -> Settlement -> Evidence -> Feedback -> Lea
 仍需手工补齐：
 
 - Luffa App 真实扫码或 WebView callback 截图；当前 public callback `https://lael.clawworld.eu.cc` 返回 Cloudflare 530 时不得扫码验收。
+- 2026-06-15 已恢复 public callback 并通过 `npm run health:luffa-app`，但手机 Luffa App 对 JSON QR、兼容 JSON QR、key=value 最小 login QR 均提示“无效二维码”；对应 session 未出现 `/scan`、`/claim` 或 `/callback` debug event。下一步需 App 侧确认真实接受的 QR schema / deep link。
 - BNB Testnet 小额 txHash、BscScan testnet、receipt、feedback、learning 截图。
 - Solana Devnet signature、explorer、receipt、feedback、learning 截图。
-- Task Reward 业务场景端到端截图；2026-06-15 已完成 Endless Web Wallet binding / verify 和 `0.001 EDS` proposal，但真实 txHash 仍阻塞在 Web Wallet 弹窗解锁后 `Confirm` 灰色不可点。
+- Task Reward 业务场景端到端截图；2026-06-15 已完成 Endless Web Wallet binding / verify、`0.001 EDS` proposal，并追加 Endless Mainnet 小额真实链上闭环：txHash `G1eVEi3JxrmPuoEjdXc1hLNuwqB9TscAVQzxo6vG5iid`、receipt、feedback、learning。Luffa App bridge 真实交易仍需 payload/schema 兼容确认。
 
 ### 14. 下一会话交接入口
 

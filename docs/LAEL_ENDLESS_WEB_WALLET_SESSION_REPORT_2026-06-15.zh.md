@@ -3,7 +3,7 @@
 日期：2026-06-15
 分支：`codex/varr-api-route-fixes`
 范围：P0 Luffa App QR / WebView 授权、P1 Endless Testnet 真实钱包路径、P2 Task Reward 真实 txHash 路径。
-状态：代码与文档已更新；Endless Web Wallet 真实 txHash 仍未完成，当前阻塞在钱包确认弹窗不可确认。
+状态：代码与文档已更新；Testnet 阶段曾阻塞在钱包确认弹窗不可确认，用户随后允许主网 EDS 小额测试，并已通过 Endless Web Wallet 完成 0.001 EDS Task Reward 真实 txHash、receipt、feedback 和 learning。Luffa App bridge 真实交易仍未完成，继续归类为 App bridge payload/schema 兼容问题。
 
 ## 1. 本轮目标
 
@@ -144,8 +144,54 @@ EYWRWEnLGxgpYVVQd2Tq74iMtHUYSas4qKG3SzrpkZr2
 
 - Endless Testnet 发送账户余额是否足够。
 - 发送账户是否已经在 testnet 链上存在并可支付 gas。
-- `signAndSubmitTransaction` payload 是否还缺少钱包 UI 模拟需要的 gas/options 字段。
+- `signAndSubmitTransaction` payload 已补充显式 `maxGasAmount`、`gasUnitPrice`、`expireTimestamp` options；仍需在钱包确认页验证这些参数是否让 `Confirm` 可用。
+- 前端已显式调用 `sdk.open()`，避免 Web Wallet iframe 已加载但 modal 容器保持隐藏，导致用户无法完成连接/签名。
+- Task Reward 默认收款人已固定为 Alice 的 Endless 地址 `6XtEwYbTZ7PPNnFogtg6crSwXc8S8P53TqWEaSBassxw`，不再因 sender wallet 已连接而自动改成自转账。
+- 前端已加入 `getAccountEDSAmount` 余额预检：在请求钱包确认前检查 sender EDS 余额是否覆盖 `0.001 EDS` reward 和 gas 预算；余额不足时阻止签名并输出 sender、balance、required、amount、feeBudget。
 - Endless Web Wallet 是否要求前端域名必须是 HTTPS 或 allowlist，而不仅是 `http://127.0.0.1:3001`。
+
+### 4.1.1 Endless Mainnet 小额尝试
+
+用户明确允许使用主网 EDS 后，本轮只打开 0.001 EDS 上限的本地主网 gate：
+
+- API 启动参数：`LAEL_ENABLE_MAINNET_EXECUTION=true`、`LAEL_MAINNET_MAX_AMOUNT_ETH=0.001`、`LAEL_PUBLIC_CALLBACK_BASE_URL=https://lael.clawworld.eu.cc`。
+- Local runtime-config：200，`mainnetExecutionEnabled=true`，`mainnetMaxAmountEth=0.001`。
+- Public callback runtime-config：`https://lael.clawworld.eu.cc/v2/runtime-config` 200。
+- `npm run health:luffa-app`：`ok: true`。
+- 前端选择：`ENDLESS_MAINNET`、`EDS`，主网风险确认已勾选。
+- Proposal：`proposal_af48bb8a-a58b-44e1-a654-9c24b45c4c43`。
+- 业务场景：`Agent complete a small task and reward 0.001 EDS to Alice with Endless Web Wallet on Endless mainnet`。
+- 收款人：Alice `6XtEwYbTZ7PPNnFogtg6crSwXc8S8P53TqWEaSBassxw`。
+- 追加余额验证：用户给活动 sender `EYWRWEnLGxgpYVVQd2Tq74iMtHUYSas4qKG3SzrpkZr2` 充值后，使用 `@endlesslab/endless-ts-sdk` 直接查询 Endless Mainnet，确认余额为 `10 EDS`。
+- 钱包可见性修复：Web Wallet modal 曾因 SDK 持久化位置落在可视区外，读到 iframe 坐标约为 `x=1358`，导致用户看不到交易弹窗但 Chrome 仍报告扩展 UI 正在占用。前端已通过 `src/frontend/app/globals.css` 将 `#endless_dapp_modal_container` 固定到左上角可见区域，验证后 iframe 坐标约为 `x=16`、`y=56`。
+- 完成证据：用户在已注册 Web Wallet 的 Chrome 会话中完成真实钱包确认，页面返回 `Endless Web Wallet submitted real tx`。
+- txHash：`G1eVEi3JxrmPuoEjdXc1hLNuwqB9TscAVQzxo6vG5iid`。
+- Execution receipt：`exec_00e02bbd-dc7a-467f-bb1e-4fcb4464e21e`。
+- Receipt 状态：`settlement=completed`、`mode=real`、`app auth=approved`、`walletType=endless-web-wallet`。
+- Feedback / Learning：feedback submitted；learning updated；agent score `0.93 -> 0.94`，human confirmation preserved。
+- 链上 receipt 查询：`GET /v2/settlement/tx/G1eVEi3JxrmPuoEjdXc1hLNuwqB9TscAVQzxo6vG5iid?chainType=endless&chainId=220` 返回 `status=SUCCESS`、`chainId=220`、`blockNumber=188036997`。
+- Endless Mainnet RPC 证据：`success=true`、`vm_status=Executed successfully`、sender `EYWRWEnLGxgpYVVQd2Tq74iMtHUYSas4qKG3SzrpkZr2`、payload `0x1::endless_account::transfer`、recipient `6XtEwYbTZ7PPNnFogtg6crSwXc8S8P53TqWEaSBassxw`、amount `100000` base units、`gas_used=10`。
+
+结论：Endless Mainnet Web Wallet lane 已完成 P2 Task Reward 真实链上闭环：`proposal -> real wallet confirmation -> real txHash -> receipt -> feedback -> learning`。该结论只适用于 Endless Web Wallet lane；Luffa App QR / bridge 真实交易仍按 4.2 归类为 payload/schema 兼容问题。
+
+### 4.1.2 Luffa App QR parser 复测
+
+在 API、frontend、Cloudflare public callback 均在线，且 `npm run health:luffa-app` 返回 `ok: true` 后，本轮重新生成短时效 QR 做真实手机扫码复测。
+
+复测过的格式：
+
+- 标准 JSON QR payload。
+- `protocol=luffa-endless-auth:v1` 兼容 JSON payload。
+- `protocol=luffa-endless-auth` / `version=v1` key=value 最小 login QR，不包含 amount、recipient 或 task_reward intent。
+
+结果：
+
+- 手机 Luffa App 扫码入口提示“无效二维码”。
+- 最小 login session `endless_qr_d96f0a34-89b2-44b3-a893-7e46afad942b` 在有效期内保持 `waiting`。
+- `GET /v2/endless/qr-sessions/endless_qr_d96f0a34-89b2-44b3-a893-7e46afad942b/debug` 返回 `events=[]`。
+- API 未收到 `/scan`、`/claim` 或 `/callback` 请求。
+
+结论：该阻塞发生在 Luffa App 本地 QR parser/schema 阶段，早于 public callback 和交易 bridge。继续真实 App 验收前，需要 App 侧确认实际接受的 QR schema 或 deep link 格式；不要继续用同类 QR 让用户重复扫码。
 
 ### 4.2 Luffa App bridge 真实交易仍未完成
 
@@ -162,10 +208,11 @@ EYWRWEnLGxgpYVVQd2Tq74iMtHUYSas4qKG3SzrpkZr2
 - Luffa App 登录授权和 signed callback 可以算 P0 原生授权协议验收进展。
 - Luffa App bridge 的真实 transfer / task_reward 交易提交仍需 App 端确认 `packageTransactionV2` / `signAndSubmitTransaction` 的 payload schema。
 - 不应继续用反复扫码来验证真实 txHash；真实 Endless txHash 应先走 Endless Web Wallet。
+- 若手机端直接提示“无效二维码”且 API debug events 为空，应先归类为 App QR parser/schema 不兼容，而不是 bridge 或 callback 问题。
 
-### 4.3 Public callback 未 ready
+### 4.3 Public callback 当前准入状态
 
-当前 `https://lael.clawworld.eu.cc/v2/runtime-config` 返回 Cloudflare 530。真实 Luffa App QR / WebView 验收前必须恢复：
+本轮后续已恢复 `https://lael.clawworld.eu.cc/v2/runtime-config`，并通过 `npm run health:luffa-app` 验证 public runtime 和 public scan page 均可访问。真实 Luffa App QR / WebView 验收前仍必须确认：
 
 1. API 在线：`http://127.0.0.1:3000`
 2. Frontend 在线：`http://127.0.0.1:3001`
@@ -182,7 +229,7 @@ LAEL_PUBLIC_CALLBACK_BASE_URL=https://lael.clawworld.eu.cc
 npm run health:luffa-app
 ```
 
-只有 health check 通过后，才能生成新 QR 并扫码。
+只有 health check 通过后，才能生成新 QR 并扫码。本轮 QR parser 复测显示，即使 public callback ready，手机端仍可能在本地 QR parser 阶段提示“无效二维码”；此时应按 4.1.2 处理，不继续重复扫码。
 
 ## 5. 下一步建议
 
@@ -190,7 +237,7 @@ npm run health:luffa-app
 
 1. 重启 API / frontend，并恢复 `lael.clawworld.eu.cc` Cloudflare named tunnel。
 2. 在前端加入 Web Wallet tx 预检：检查 sender account、recipient account、EDS balance、gas 余额和 testnet 网络。
-3. 给 `signAndSubmitTransaction` 增加明确 options：`maxGasAmount`、`gasUnitPrice`、`expireTimestamp`。
+3. 让用户在可见 Web Wallet modal 中完成连接、解锁和授权；若交易确认页仍灰色，记录 sender、recipient、amountUnits、options 和 wallet response。
 4. 如果钱包 `Confirm` 仍灰色，直接记录为 Endless Web Wallet SDK / wallet UI 层阻塞，并准备最小复现交给 Endless Wallet 侧排查。
 5. 真实 txHash 返回后，再执行 `Approve & Record`，补齐 receipt、feedback、learning。
 
@@ -209,3 +256,5 @@ app-authorized / wallet-authorized, txHash pending
 ```
 
 不能标记为真实链上完成。
+
+本轮例外完成项：Endless Web Wallet 主网 Task Reward 已返回真实 txHash `G1eVEi3JxrmPuoEjdXc1hLNuwqB9TscAVQzxo6vG5iid`，并完成 receipt、feedback、learning；该完成项不改变 Luffa App bridge 的 `txHash pending` 状态。

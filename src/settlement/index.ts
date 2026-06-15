@@ -1,6 +1,6 @@
 import type { LaelDb } from "../db/index.js";
 import { getChainConfig, getDefaultChainForType } from "../chains/registry.js";
-import type { ChainType } from "../chains/types.js";
+import type { ChainConfig, ChainType } from "../chains/types.js";
 import { newId, nowIso } from "../utils.js";
 import { EndlessSettlementAdapter, EvmSettlementAdapter, SolanaSettlementAdapter } from "./adapters/index.js";
 import type {
@@ -129,6 +129,10 @@ export class SettlementService {
     chainType?: ChainType,
     chainId?: string,
   ): Promise<TransactionVerification> {
+    const chain = chainId ? getChainConfig(chainId) : undefined;
+    if (chain && (!chainType || chain.chainType === chainType)) {
+      return createSettlementAdapter(chain).verifyTransaction(txHash);
+    }
     const adapter = this.requireAdapter(chainType ?? inferChainType(chainId) ?? "evm");
     return adapter.verifyTransaction(txHash);
   }
@@ -491,4 +495,14 @@ function inferChainType(chainId: string | undefined): ChainType | undefined {
   }
 
   return getChainConfig(chainId)?.chainType;
+}
+
+function createSettlementAdapter(chain: ChainConfig): SettlementAdapter {
+  if (chain.chainType === "solana") {
+    return new SolanaSettlementAdapter(chain);
+  }
+  if (chain.chainType === "endless") {
+    return new EndlessSettlementAdapter(chain);
+  }
+  return new EvmSettlementAdapter(chain);
 }

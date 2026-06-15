@@ -32,6 +32,14 @@ const ALICE_ENDLESS_ADDRESS = "6XtEwYbTZ7PPNnFogtg6crSwXc8S8P53TqWEaSBassxw";
 const BASE_SEPOLIA_USDC = "0x036CbD53842c5426634e7929541eC2318f3dCF7e";
 const MAINNET_EXECUTION_ENV_VAR = "LAEL_ENABLE_MAINNET_EXECUTION";
 const DEFAULT_MAINNET_MAX_AMOUNT_ETH = 0.00001;
+const ENDLESS_TX_OPTIONS = {
+  maxGasAmount: 100,
+  gasUnitPrice: 100,
+  expireTimestamp: () => Math.floor(Date.now() / 1000 + 120),
+};
+const ENDLESS_BASE_UNITS_PER_EDS = 1e8;
+const ENDLESS_MODAL_CONTAINER_ID = "endless_dapp_modal_container";
+const ENDLESS_MODAL_HIDDEN_CLASS = "endless_dapp_modal_container_hide";
 type ChainOption = {
   chainKey: "BASE_SEPOLIA" | "BASE_MAINNET" | "BNB_TESTNET" | "BNB_MAINNET" | "SOLANA_DEVNET" | "SOLANA_MAINNET" | "ENDLESS_TESTNET" | "ENDLESS_MAINNET";
   label: string;
@@ -714,9 +722,9 @@ export default function Page() {
     setFeedbackStatus("");
     const inputText = overrides.input ?? rawInput;
     const proposalWalletAddress = walletAddress || fallbackWalletAddress(selectedChain);
-    const defaultRecipientAddress = effectiveRecipientAddressForChain(selectedChain, recipientAddress, endlessAccount);
+    const defaultRecipientAddress = effectiveRecipientAddressForChain(selectedChain, recipientAddress);
     if (selectedChain.chainType === "endless" && defaultRecipientAddress !== recipientAddress.trim()) {
-      setLog((items) => ["Using the connected Luffa / Endless account as the reward recipient for this real-chain validation; replace Alice with a real Endless address for a third-party reward.", ...items].slice(0, 12));
+      setLog((items) => ["Using Alice's fixed Endless address for this real-chain reward validation.", ...items].slice(0, 12));
     }
     const nextProposal = await callApi<Proposal>("/v2/payment-agent/proposals", {
       method: "POST",
@@ -749,7 +757,7 @@ export default function Page() {
       businessAction: "task_reward",
       max: selectedChain.chainType === "endless" ? "0.001" : maxAmount,
       allowedChain: selectedChain.chainKey,
-      recipients: [{ name: "Alice", address: effectiveRecipientAddressForChain(selectedChain, recipientAddress, endlessAccount) }],
+      recipients: [{ name: "Alice", address: effectiveRecipientAddressForChain(selectedChain, recipientAddress) }],
     });
   }
 
@@ -991,10 +999,10 @@ export default function Page() {
     const amount = isLogin ? 0 : currentProposal?.parsedIntent.amount ?? extractAmount(rawInput) ?? 1;
     const intent = isLogin ? "Connect Luffa App wallet to LAEL DID" : currentProposal?.rawInput ?? rawInput;
     const proposalRecipient = currentProposal?.parsedIntent.recipientAddress ?? recipientAddress;
-    const recipient = isLogin ? "" : effectiveRecipientAddressForChain(chain, proposalRecipient, endlessAccount);
+    const recipient = isLogin ? "" : effectiveRecipientAddressForChain(chain, proposalRecipient);
     if (!isLogin && chain.chainType === "endless" && !isEndlessRuntimeAddress(recipient)) {
       setEndlessStatus("A real Endless transaction requires a Luffa / Endless recipient address, not an EVM 0x address.");
-      setLog((items) => ["Enter a real Luffa / Endless recipient address or complete Luffa App login first so this test can use the connected account.", ...items].slice(0, 12));
+      setLog((items) => ["Enter a real Luffa / Endless recipient address or use Alice's fixed Endless reward address.", ...items].slice(0, 12));
       return undefined;
     }
     const session = await callApi<EndlessQrSessionView>("/v2/endless/qr-sessions", {
@@ -1130,6 +1138,8 @@ export default function Page() {
         import("@endlesslab/endless-ts-sdk"),
       ]);
       const sdk = new EndlessJsSdk({ network: chain.networkKind === "mainnet" ? Network.MAINNET : Network.TESTNET, colorMode: "light" });
+      sdk.open();
+      forceEndlessWebWalletModalVisible();
       const connected = await sdk.connect();
       if (connected.status !== UserResponseStatus.APPROVED) {
         setEndlessAuthStatus("rejected");
@@ -1339,7 +1349,7 @@ export default function Page() {
       setLog((items) => [mainnetBlock, ...items].slice(0, 12));
       return undefined;
     }
-    const recipient = effectiveRecipientAddressForChain(selectedChain, currentProposal.parsedIntent.recipientAddress, endlessAccount);
+    const recipient = effectiveRecipientAddressForChain(selectedChain, currentProposal.parsedIntent.recipientAddress);
     if (!isEndlessRuntimeAddress(recipient)) {
       setEndlessStatus("A real Endless transaction requires a Luffa / Endless recipient address, not an EVM 0x address.");
       setLog((items) => ["Enter a real Endless recipient address before signing with Endless Web Wallet", ...items].slice(0, 12));
@@ -1348,11 +1358,14 @@ export default function Page() {
     try {
       setEndlessStatus("Requesting Endless Web Wallet transaction signature");
       setLog((items) => ["Signing real Endless transaction with Endless Web Wallet SDK", ...items].slice(0, 12));
-      const [{ EndlessJsSdk, UserResponseStatus }, { AccountAddress, Network, TypeTagAddress, TypeTagU128 }] = await Promise.all([
+      const [{ EndlessJsSdk, UserResponseStatus }, { AccountAddress, Endless, EndlessConfig, Network, TypeTagAddress, TypeTagU128 }] = await Promise.all([
         import("@endlesslab/endless-web3-sdk"),
         import("@endlesslab/endless-ts-sdk"),
       ]);
-      const sdk = new EndlessJsSdk({ network: selectedChain.networkKind === "mainnet" ? Network.MAINNET : Network.TESTNET, colorMode: "light" });
+      const network = selectedChain.networkKind === "mainnet" ? Network.MAINNET : Network.TESTNET;
+      const sdk = new EndlessJsSdk({ network, colorMode: "light" });
+      sdk.open();
+      forceEndlessWebWalletModalVisible();
       const accountResult = endlessAccount ? await sdk.getAccount() : await sdk.connect();
       if (accountResult.status !== UserResponseStatus.APPROVED) {
         setEndlessAuthStatus("rejected");
@@ -1364,7 +1377,35 @@ export default function Page() {
         setEndlessAccount(account.address);
         setEndlessAccountSource("endless_web_wallet");
       }
-      const amountUnits = BigInt(Math.max(1, Math.round(currentProposal.parsedIntent.amount * 1e8)));
+      const amountUnits = BigInt(Math.max(1, Math.round(currentProposal.parsedIntent.amount * ENDLESS_BASE_UNITS_PER_EDS)));
+      const options = {
+        maxGasAmount: ENDLESS_TX_OPTIONS.maxGasAmount,
+        gasUnitPrice: ENDLESS_TX_OPTIONS.gasUnitPrice,
+        expireTimestamp: ENDLESS_TX_OPTIONS.expireTimestamp(),
+      };
+      const senderAddress = account.address;
+      if (!senderAddress) {
+        setEndlessStatus("Endless Web Wallet account response missing sender address");
+        setLog((items) => ["Endless Web Wallet account response missing sender address", ...items].slice(0, 12));
+        return undefined;
+      }
+      const balance = await new Endless(new EndlessConfig({ network })).getAccountEDSAmount({ accountAddress: AccountAddress.fromBs58String(senderAddress) });
+      const feeBudget = (options.maxGasAmount * options.gasUnitPrice) / ENDLESS_BASE_UNITS_PER_EDS;
+      const minimumRequired = currentProposal.parsedIntent.amount + feeBudget;
+      if (balance < minimumRequired) {
+        const balanceMessage = `Insufficient Endless ${selectedChain.networkKind} EDS balance: sender=${senderAddress} balance=${balance} EDS required>=${minimumRequired} EDS amount=${currentProposal.parsedIntent.amount} feeBudget=${feeBudget}`;
+        setEndlessAuthStatus("unavailable");
+        setEndlessStatus(balanceMessage);
+        setLog((items) => [balanceMessage, ...items].slice(0, 12));
+        return undefined;
+      }
+      setLog((items) =>
+        [
+          `Endless tx payload: sender=${senderAddress} recipient=${recipient} amountUnits=${amountUnits.toString()} balance=${balance} EDS options=${JSON.stringify(options)}`,
+          ...items,
+        ].slice(0, 12),
+      );
+      forceEndlessWebWalletModalVisible();
       const response = await sdk.signAndSubmitTransaction({
         payload: {
           function: "0x1::endless_account::transfer",
@@ -1374,6 +1415,7 @@ export default function Page() {
             parameters: [new TypeTagAddress(), new TypeTagU128()],
           },
         },
+        options,
       });
       if (response.status !== UserResponseStatus.APPROVED) {
         setEndlessAuthStatus("rejected");
@@ -2498,12 +2540,11 @@ function isEndlessRuntimeAddress(value: string | undefined): boolean {
   return normalized.length > 0 && !normalized.startsWith("0x");
 }
 
-function effectiveRecipientAddressForChain(chain: ChainOption, candidate: string, connectedEndlessAccount: string): string {
+function effectiveRecipientAddressForChain(chain: ChainOption, candidate: string): string {
   if (chain.chainType !== "endless") return candidate.trim();
   const normalizedCandidate = candidate.trim();
   if (isEndlessRuntimeAddress(normalizedCandidate)) return normalizedCandidate;
-  if (isEndlessRuntimeAddress(connectedEndlessAccount)) return connectedEndlessAccount.trim();
-  return normalizedCandidate;
+  return chain.defaultRecipient;
 }
 
 function taskRewardPrompt(chain: ChainOption): string {
@@ -2599,6 +2640,27 @@ function normalizeSignatureValue(value: unknown): string | undefined {
   if (typeof value === "string") return value;
   if (value && typeof (value as { toString: () => string }).toString === "function") return (value as { toString: () => string }).toString();
   return undefined;
+}
+
+function forceEndlessWebWalletModalVisible() {
+  if (typeof window === "undefined") return;
+  const reveal = () => {
+    const modal = document.getElementById(ENDLESS_MODAL_CONTAINER_ID);
+    if (!modal) return;
+    modal.classList.remove(ENDLESS_MODAL_HIDDEN_CLASS);
+    Object.assign(modal.style, {
+      display: "flex",
+      left: "16px",
+      right: "auto",
+      top: "16px",
+      width: "min(360px, calc(100vw - 32px))",
+      maxHeight: "calc(100vh - 32px)",
+      transform: "none",
+    });
+  };
+  reveal();
+  window.setTimeout(reveal, 300);
+  window.setTimeout(reveal, 1000);
 }
 
 function normalizeRejectedResponse(value: unknown): Record<string, unknown> {

@@ -58,6 +58,7 @@ describe("frontend wallet menu", () => {
     expect(page).toContain("webview_bridge");
     expect(page).toContain("@endlesslab/endless-web3-sdk");
     expect(page).toContain("EndlessJsSdk");
+    expect(page).toContain("sdk.open()");
     expect(page).toContain("AccountAddress.fromBs58String");
     expect(page).toContain("new TypeTagAddress()");
     expect(page).toContain("new TypeTagU128()");
@@ -69,8 +70,13 @@ describe("frontend wallet menu", () => {
     expect(page).toContain("Endless ${chain.networkKind}");
     expect(page).toContain("reward 0.001 EDS to Alice with Endless Web Wallet on Endless ${chain.networkKind}");
     expect(page).toContain('const ALICE_ENDLESS_ADDRESS = "6XtEwYbTZ7PPNnFogtg6crSwXc8S8P53TqWEaSBassxw"');
-    expect(page).toContain("effectiveRecipientAddressForChain(selectedChain, recipientAddress, endlessAccount)");
-    expect(page).toContain("Using the connected Luffa / Endless account as the reward recipient");
+    expect(page).toContain("effectiveRecipientAddressForChain(selectedChain, recipientAddress)");
+    expect(page).toContain("Using Alice's fixed Endless address for this real-chain reward validation.");
+    expect(page).toContain("ENDLESS_TX_OPTIONS");
+    expect(page).toContain("getAccountEDSAmount");
+    expect(page).toContain("Insufficient Endless ${selectedChain.networkKind} EDS balance");
+    expect(page).toContain("options,");
+    expect(page).toContain("Endless tx payload: sender=");
     expect(page).toContain("A real Endless transaction requires a Luffa / Endless recipient address");
     expect(page).toContain('max: selectedChain.chainType === "endless" ? "0.001" : maxAmount');
     expect(page).not.toContain("reward 1 EDS to Alice with Luffa App on Endless testnet");
