@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { LAEL } from "../src/core/index.js";
 import { WalletType } from "../src/wallet/index.js";
+import * as ed25519 from "@noble/ed25519";
 import { bytesToHex, hexToBytes } from "@noble/hashes/utils";
 import type { ChainType } from "../src/chains/index.js";
 import { evmAddressFromSecret, signEthereumMessage } from "./helpers/evm.js";
@@ -131,6 +132,63 @@ describe("wallet module", () => {
       walletType: WalletType.LUFFA,
       chainType: "endless",
       address: fixture.publicKey,
+      nonce: pending.nonce,
+      signature,
+      signatureMessage: fullMessage,
+    });
+
+    expect(binding.verified).toBe(true);
+    lael.close();
+  });
+
+  it("verifies Endless account bindings with a separate signing public key", async () => {
+    const lael = new LAEL({ path: ":memory:" });
+    const fixture = loadFixture<SolanaFixture>("solana-wallet.json");
+    const accountAddress = "EYWRWEnLGxgpYVVQd2Tq74iMtHUYSas4qKG3SzrpkZr2";
+    const signingPublicKey = `0x${bytesToHex(ed25519.getPublicKey(hexToBytes(fixture.secretKey)))}`;
+    const pending = lael.connectWallet({
+      ownerRef: "did:luffa:endless_web_wallet",
+      walletType: WalletType.LUFFA,
+      chainType: "endless",
+      address: accountAddress,
+    });
+    const fullMessage = `Endless::Message|address:${accountAddress}|message: ${pending.message}|nonce: ${pending.nonce}`;
+    const signature = `0x${await lael.identity.signMessage(fixture.secretKey, fullMessage)}`;
+    const binding = await lael.verifyWallet({
+      bindingId: pending.bindingId,
+      ownerRef: pending.ownerRef,
+      walletType: WalletType.LUFFA,
+      chainType: "endless",
+      address: accountAddress,
+      publicKey: signingPublicKey,
+      nonce: pending.nonce,
+      signature,
+      signatureMessage: fullMessage,
+    });
+
+    expect(binding.address).toBe(accountAddress);
+    expect(binding.verified).toBe(true);
+    lael.close();
+  });
+
+  it("verifies 0x-encoded Endless public keys and signatures", async () => {
+    const lael = new LAEL({ path: ":memory:" });
+    const fixture = loadFixture<SolanaFixture>("solana-wallet.json");
+    const publicKey = `0x${bytesToHex(ed25519.getPublicKey(hexToBytes(fixture.secretKey)))}`;
+    const pending = lael.connectWallet({
+      ownerRef: "did:luffa:endless_hex_signature",
+      walletType: WalletType.LUFFA,
+      chainType: "endless",
+      address: publicKey,
+    });
+    const fullMessage = `Endless::Message|message: ${pending.message}|nonce: ${pending.nonce}`;
+    const signature = `0x${await lael.identity.signMessage(fixture.secretKey, fullMessage)}`;
+    const binding = await lael.verifyWallet({
+      bindingId: pending.bindingId,
+      ownerRef: pending.ownerRef,
+      walletType: WalletType.LUFFA,
+      chainType: "endless",
+      address: publicKey,
       nonce: pending.nonce,
       signature,
       signatureMessage: fullMessage,

@@ -46,6 +46,7 @@ export interface VerifyWalletInput {
   walletType: WalletType;
   chainType: ChainType;
   address: string;
+  publicKey?: string;
   nonce: string;
   signature: string;
   signatureMessage?: string;

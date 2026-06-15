@@ -70,7 +70,7 @@ Michael 连接钱包并切到 Base Sepolia。系统绑定 owner DID 与 wallet�
 Michael 对 Agent 说：
 
 ```text
-帮我转 0.0001 ETH 给 Alice
+帮我转 0.00001 ETH 给 Alice
 ```
 
 LAEL 执行：
@@ -127,6 +127,7 @@ Michael 为一次 Agent 服务创建 invoice/payment proof。系统不连接真�
 | --- | --- |
 | VARR runtime | 已有 sidecar runtime、capability、context、receipt、learning tests。 |
 | Payment Agent transfer | 已有 Base Sepolia ETH/USDC、BNB Testnet、Solana Devnet、Endless Testnet / Luffa App proposal、wallet signing / app authorization、receipt、feedback、memory。 |
+| Task Reward business flow | 已有 `businessAction=task_reward` proposal、wallet / Luffa App authorization、settlement receipt、feedback、learning signal。 |
 | Settlement adapter | 已有 Luffa Points、EVM native、EVM ERC20、Solana native / SPL abstraction、Endless native / Luffa App authorization abstraction。 |
 | Swap proposal | 已有 simulated value-agent flow，不接真实 DEX。 |
 | Fiat/invoice proof | 已有 proof settlement rails，不接真实 Stripe、银行或 on/off-ramp provider。 |
@@ -136,13 +137,17 @@ Michael 为一次 Agent 服务创建 invoice/payment proof。系统不连接真�
 
 | 网络 | MVP 深度 | 钱包/授权路径 | 备注 |
 | --- | --- | --- | --- |
-| Base Sepolia / Base Mainnet | Sepolia 支持真实 EVM 钱包签名 + txHash receipt；Mainnet 只做连接、proposal 和 permission 展示 | MetaMask / OKX Wallet | Base Sepolia 仍是默认主演示链；Mainnet 真实执行默认禁用。 |
+| Base Sepolia / Base Mainnet | Sepolia 支持真实 EVM 钱包签名 + txHash receipt；Mainnet 默认只做连接、proposal 和 permission 展示，受控小额实测需要安全门 | MetaMask / OKX Wallet | Base Sepolia 仍是默认主演示链；Mainnet 真实执行默认禁用，必须显式开启 env gate 和页面二次确认。 |
 | BNB Testnet / BNB Mainnet | Testnet 支持真实 EVM 钱包签名 + txHash receipt；Mainnet 只做连接、proposal 和 permission 展示 | MetaMask / OKX Wallet | 前端提供 Add BNB Testnet to OKX 操作；Mainnet 真实执行默认禁用。 |
 | Solana Devnet / Solana Mainnet | Devnet 支持 wallet binding + signature receipt；Mainnet 只做连接、proposal 和 permission 展示 | Phantom / Solana Wallet | 当前优先支持 SOL native，SPL token 真实转账后续扩展。 |
-| Endless Testnet / Luffa App | Luffa App / Endless SDK connect、signMessage、signAndSubmitTransaction | `@luffalab/luffa-endless-sdk` | Endless 不按 EVM add-network 处理。 |
+| Endless Testnet / Luffa App | Luffa App / Endless SDK connect、signMessage、signAndSubmitTransaction；`luffa-endless-auth:v1` QR / WebView signed callback | `@luffalab/luffa-endless-sdk` / QR session API | Endless 不按 EVM add-network 处理；真实 App callback 必须验签。 |
 
 当前边界：
 
 - OKX Endless 原生支持需要 OKX 公开 Endless provider 或支持 Endless Wallet Standard。
-- Luffa App 独立二维码授权需要 App 端 QR session、callback 或 polling 协议。
+- Luffa App 独立二维码授权已升级为 `luffa-endless-auth:v1`；mock callback 只生成 `protocol_mock` receipt，真实 App callback 必须带 `publicKey/fullMessage/signature` 并通过验签。
 - Mainnet 真实价值执行不作为当前 MVP 默认路径。
+
+2026-06-04 更新：详见 `LAEL_BASE_SEPOLIA_ACCEPTANCE_REPORT_2026-06-04.zh.md`。Base Mainnet 小额实测必须满足 `LAEL_ENABLE_MAINNET_EXECUTION=true`、页面 `mainnetRiskAccepted` 和 `LAEL_MAINNET_MAX_AMOUNT_ETH`；Endless QR mock callback 只代表本地协议级验收。
+
+2026-06-12 更新：详见 `LAEL_P0_P1_P2_NATIVE_APP_REWARD_VERIFICATION_REPORT_2026-06-12.zh.md`。本轮停止 demo video，优先推进真实 Luffa App QR / WebView 授权、BNB / Solana / Endless 手工证据和 Task Reward 业务场景。

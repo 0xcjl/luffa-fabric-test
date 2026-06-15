@@ -66,3 +66,23 @@
 - Endless 属于 Luffa App / Endless Wallet lane，不强行塞进 EVM add-network。
 - Luffa App 独立二维码授权需要 App 端协议支持，当前记录为下一阶段。
 - 所有路径仍必须经过 Identity、Permission、Execution、Settlement / Evidence、Feedback、Learning 闭环。
+
+## 2026-06-04 后续更新
+
+`LAEL_BASE_SEPOLIA_ACCEPTANCE_REPORT_2026-06-04.zh.md` 已把 Luffa App QR 从“下一阶段规划”推进为浏览器协议级验收：
+
+- 新增 `POST /v2/endless/qr-sessions` 创建 QR session。
+- 新增 `GET /v2/endless/qr-sessions/:sessionId` polling。
+- 新增 `POST /v2/endless/qr-sessions/:sessionId/callback` 接收 App callback 并生成 authorization receipt。
+- 前端 Endless lane 展示 waiting / approved / rejected / expired / failed。
+- 本地 Mock App Callback 仅用于协议级验收；真实 Luffa App callback 仍需要 App 端接入。
+
+## 2026-06-12 更新
+
+- Endless / Luffa App 授权协议已升级为 `luffa-endless-auth:v1`，真实 callback 必须提交 `publicKey/fullMessage/signature` 并通过 session nonce 验签。
+- WebView bridge 和 QR scan callback 复用同一个 authorization session / callback endpoint。
+- `Mock App Callback` 只能生成 `callbackSource=protocol_mock`、`signatureVerified=false` 的本地验收 receipt，不能算真实 App 完成。
+- BNB Testnet 和 Solana Devnet 代码路径已就绪，但真实 txHash / signature、explorer、receipt、feedback、learning 截图仍需手工补齐。
+- Task Reward 业务场景已接入 `businessAction=task_reward`，可复用 Base / BNB / Solana / Endless 测试网验收。
+
+主网边界也已细化：Base Mainnet 小额实测需要 `LAEL_ENABLE_MAINNET_EXECUTION=true`、页面 `mainnetRiskAccepted` 和 `LAEL_MAINNET_MAX_AMOUNT_ETH` 金额上限；默认仍禁用真实价值执行。

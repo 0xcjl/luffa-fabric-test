@@ -84,7 +84,7 @@ Failure paths:
 2. Enter the On-chain Value Agent tab.
 3. Connect wallet and switch to Base Sepolia.
 4. Select ETH.
-5. Enter `Send 0.0001 ETH to Alice`.
+5. Enter `Send 0.00001 ETH to Alice`.
 6. Generate Proposal.
 7. Sign Wallet Tx.
 8. Approve & Record.

@@ -9,6 +9,9 @@ const PAYMENT_ACTION = "luffa.create_task";
 const DEFAULT_CHAIN = "BASE_SEPOLIA";
 const DEFAULT_ASSET = "USDC";
 const DUMMY_USDC_BASE_SEPOLIA = "0x0000000000000000000000000000000000000003";
+const DUPLICATE_TRANSFER_BLOCK_WINDOW_MS = 60 * 60 * 1000;
+
+export type PaymentBusinessAction = "transfer" | "task_reward";
 
 export interface PaymentAgentRecipient {
   name: string;
@@ -28,6 +31,7 @@ export interface CreatePaymentProposalInput {
   ownerRef: string;
   walletAddress: string;
   rawInput: string;
+  businessAction?: PaymentBusinessAction;
   defaultAsset?: string;
   recipients: PaymentAgentRecipient[];
   policy: PaymentAgentPolicyInput;
@@ -78,6 +82,7 @@ export interface PaymentProposal {
   ownerRef: string;
   walletAddress: string;
   rawInput: string;
+  businessAction: PaymentBusinessAction;
   parsedIntent: TransferIntent;
   permissionDecision: PaymentPermissionDecision;
   learningContext: {
@@ -90,6 +95,7 @@ export interface PaymentProposal {
 
 export interface PaymentExecutionReceipt {
   rawInput: string;
+  businessAction: PaymentBusinessAction;
   parsedIntent: TransferIntent;
   permissionDecision: PaymentPermissionDecision;
   walletTx: {
@@ -175,6 +181,7 @@ export class PaymentAgentMvpService {
       ownerRef: input.ownerRef,
       walletAddress: input.walletAddress,
       rawInput: input.rawInput,
+      businessAction: inferBusinessAction(input),
       parsedIntent: parsed.intent,
       permissionDecision,
       learningContext: {
@@ -217,15 +224,19 @@ export class PaymentAgentMvpService {
     if (!input.humanConfirmed) {
       throw new Error("Human confirmation is required");
     }
+    if (getChainConfig(proposal.parsedIntent.chainKey)?.chainType === "endless" && !input.txHash) {
+      throw new Error("Endless value execution requires a real txHash from Endless Web Wallet or Luffa App");
+    }
 
     await this.lael.createPolicy({
       ownerRef: proposal.ownerRef,
-      priority: 100,
+      priority: 1000,
       jsonRules: {
         allowedActions: [PAYMENT_ACTION],
         maxBudgetPerAction: proposal.parsedIntent.amount,
         allowedAssets: [proposal.parsedIntent.asset],
         allowedChains: [proposal.parsedIntent.chainKey],
+        contextConstraints: [{ proposalId: proposal.proposalId }],
       },
     });
 
@@ -244,7 +255,7 @@ export class PaymentAgentMvpService {
       action: PAYMENT_ACTION,
       params: {
         communityId: "luffa-fabric-external-mvp",
-        title: `Payment Agent transfer to ${proposal.parsedIntent.recipientName}`,
+        title: paymentActionTitle(proposal),
         settlement: {
           payerDid: proposal.ownerRef,
           payeeDid: `did:luffa:recipient:${proposal.parsedIntent.recipientName}`,
@@ -266,6 +277,7 @@ export class PaymentAgentMvpService {
       idempotencyKey: `payment-agent:${proposal.proposalId}`,
       capabilityTokenId: token.tokenId,
       context: {
+        proposalId: proposal.proposalId,
         budget: proposal.parsedIntent.amount,
         humanConfirmed: true,
         requiresConfirmation: false,
@@ -274,6 +286,7 @@ export class PaymentAgentMvpService {
 
     const receipt: PaymentExecutionReceipt = {
       rawInput: proposal.rawInput,
+      businessAction: proposal.businessAction,
       parsedIntent: proposal.parsedIntent,
       permissionDecision: proposal.permissionDecision,
       walletTx: {
@@ -395,6 +408,7 @@ export class PaymentAgentMvpService {
     };
     const receipt: PaymentExecutionReceipt = {
       rawInput: proposal.rawInput,
+      businessAction: proposal.businessAction,
       parsedIntent: proposal.parsedIntent,
       permissionDecision: proposal.permissionDecision,
       walletTx: {
@@ -510,7 +524,7 @@ export class PaymentAgentMvpService {
     if (!row) {
       throw new Error(`Proposal not found: ${proposalId}`);
     }
-    return parseJson<PaymentProposal>(row.proposal_json, {} as PaymentProposal);
+    return normalizeProposal(parseJson<PaymentProposal>(row.proposal_json, {} as PaymentProposal));
   }
 
   private requireProposalByExecution(executionId: string): PaymentProposal {
@@ -520,7 +534,7 @@ export class PaymentAgentMvpService {
     if (!row) {
       throw new Error(`Payment proposal not found for execution: ${executionId}`);
     }
-    return parseJson<PaymentProposal>(row.proposal_json, {} as PaymentProposal);
+    return normalizeProposal(parseJson<PaymentProposal>(row.proposal_json, {} as PaymentProposal));
   }
 
   private getMemory(ownerRef: string): MemoryRow {
@@ -552,20 +566,27 @@ export class PaymentAgentMvpService {
     const rows = this.lael.db.db
       .prepare(
         `
-          SELECT proposal_json
+          SELECT proposal_json, receipt_json
           FROM payment_agent_proposals
-          WHERE owner_ref = ?
+          WHERE owner_ref = ? AND created_at >= ?
           ORDER BY created_at DESC
           LIMIT 25
         `,
       )
-      .all(ownerRef) as Array<{ proposal_json: string }>;
+      .all(ownerRef, new Date(Date.now() - DUPLICATE_TRANSFER_BLOCK_WINDOW_MS).toISOString()) as Array<{
+      proposal_json: string;
+      receipt_json?: string | null;
+    }>;
     const normalizedRaw = normalizeRaw(rawInput);
     for (const row of rows) {
       const existing = parseJson<PaymentProposal>(row.proposal_json, {} as PaymentProposal);
+      const receipt = row.receipt_json
+        ? parseJson<PaymentExecutionReceipt | undefined>(row.receipt_json, undefined)
+        : undefined;
       if (
         existing.permissionDecision?.status === "allow_pending_human_confirmation" &&
-        normalizeRaw(existing.rawInput) === normalizedRaw
+        normalizeRaw(existing.rawInput) === normalizedRaw &&
+        receipt?.settlementResult?.status === "completed"
       ) {
         return "Duplicate transfer intent";
       }
@@ -584,19 +605,24 @@ export class PaymentAgentMvpService {
     const rows = this.lael.db.db
       .prepare(
         `
-          SELECT proposal_json
+          SELECT proposal_json, receipt_json
           FROM payment_agent_proposals
           WHERE owner_ref = ? AND created_at >= ?
         `,
       )
       .all(ownerRef, new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()) as Array<{
       proposal_json: string;
+      receipt_json?: string | null;
     }>;
     const usedAmount = rows.reduce((total, row) => {
       const existing = parseJson<PaymentProposal>(row.proposal_json, {} as PaymentProposal);
+      const receipt = row.receipt_json
+        ? parseJson<PaymentExecutionReceipt | undefined>(row.receipt_json, undefined)
+        : undefined;
       if (
         existing.permissionDecision?.status === "allow_pending_human_confirmation" &&
-        existing.parsedIntent?.asset === intent.asset
+        existing.parsedIntent?.asset === intent.asset &&
+        receipt?.settlementResult?.status === "completed"
       ) {
         return total + existing.parsedIntent.amount;
       }
@@ -631,8 +657,9 @@ function parseTransferIntent(
     memoryKeys.push("preferredAsset");
   }
 
+  const recipients = Array.isArray(input.recipients) ? input.recipients : [];
   const recipient =
-    input.recipients.find((candidate) =>
+    recipients.find((candidate) =>
       raw.toLowerCase().includes(candidate.name.toLowerCase()),
     ) ??
     parseUnknownRecipient(raw) ??
@@ -668,11 +695,36 @@ function parseTransferIntent(
   };
 }
 
+function inferBusinessAction(input: CreatePaymentProposalInput): PaymentBusinessAction {
+  if (input.businessAction) return input.businessAction;
+  return inferBusinessActionFromRaw(input.rawInput);
+}
+
+function normalizeProposal(proposal: PaymentProposal): PaymentProposal {
+  return {
+    ...proposal,
+    businessAction: proposal.businessAction ?? inferBusinessActionFromRaw(proposal.rawInput),
+  };
+}
+
+function inferBusinessActionFromRaw(rawInput: string): PaymentBusinessAction {
+  return /reward|奖励|claim|任务/i.test(rawInput) ? "task_reward" : "transfer";
+}
+
+function paymentActionTitle(proposal: PaymentProposal): string {
+  return proposal.businessAction === "task_reward"
+    ? `Task reward to ${proposal.parsedIntent.recipientName}`
+    : `Payment Agent transfer to ${proposal.parsedIntent.recipientName}`;
+}
+
 function parseExplicitChain(rawInput: string): string | undefined {
   const raw = rawInput.toLowerCase();
   if (raw.includes("base sepolia")) return "BASE_SEPOLIA";
   if (raw.includes("bnb") || raw.includes("bsc") || raw.includes("binance smart chain")) return "BNB_TESTNET";
-  if (raw.includes("endless") || raw.includes("luffa app")) return "ENDLESS_TESTNET";
+  if (raw.includes("endless") || raw.includes("luffa app")) {
+    if (raw.includes("mainnet")) return "ENDLESS_MAINNET";
+    return "ENDLESS_TESTNET";
+  }
   if (raw.includes("polygon")) return "POLYGON_AMOY";
   if (raw.includes("solana")) return "SOLANA_DEVNET";
   if (raw.includes("ethereum")) return "ETHEREUM_SEPOLIA";

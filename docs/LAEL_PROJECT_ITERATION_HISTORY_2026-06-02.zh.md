@@ -25,6 +25,12 @@
 | Microsoft AGT 融合 | 2026-06-02 | Governance Extension | AGT 被定位为 Permission / Governance Extension 的可选治理积木，不替代 Luffa 核心协议 | `LAEL_AGT_INTEGRATION_v0.3.zh.md` |
 | AGT 下一阶段规划 | 2026-06-02 | Sidecar / MCP Gateway / fork gate | 当前 MVP 只保留 Adapter PoC；真实 AGT runtime、MCP Security Gateway、fork 改造进入未来阶段 | `LAEL_AGT_NEXT_STEP_EVALUATION_2026-06-02.zh.md`, `LAEL_AGT_IMPLEMENTATION_PLAN_2026-06-02.zh.md` |
 | 多链钱包支持 | 2026-06-02 | Base / BNB / Solana / Endless | 增加主网和测试网展示，支持 MetaMask / OKX、Phantom、Luffa App / Endless SDK 入口 | `LAEL_MULTICHAIN_WALLET_SUPPORT_TEST_REPORT_2026-06-02.zh.md` |
+| 链上验收强化 | 2026-06-04 | Base Sepolia / Mainnet Guard / Endless QR | 固化 Base Sepolia 手工验收主线；新增 Base Mainnet env + 页面二次确认安全门；新增 Endless QR session / callback / polling 协议 | `LAEL_BASE_SEPOLIA_ACCEPTANCE_REPORT_2026-06-04.zh.md` |
+| June 15 交付轨道 | 2026-06-04 | MVP 验收矩阵 | 明确 Full MVP testing、Wallet integration demo、Real-environment report、Internal one-pager、可选 demo video 的完成定义和执行顺序 | `LAEL_MVP_ACCEPTANCE_MATRIX_2026-06-04.zh.md` |
+| Wallet Demo 脚本 | 2026-06-04 | Demo Script | 基于真实 Base Sepolia txHash 固化 3-5 分钟钱包集成演示流程，覆盖 mainnet guard 和 Endless QR 协议边界 | `LAEL_WALLET_INTEGRATION_DEMO_SCRIPT_2026-06-04.zh.md` |
+| 真实环境测试报告 | 2026-06-04 / 2026-06-06 | Real-environment Test | 记录 Base Sepolia 真实 txHash、completed receipt / feedback 截图、BaseScan evidence、mainnet guard、Endless QR protocol-level 截图 | `LAEL_REAL_ENVIRONMENT_TEST_REPORT_2026-06-04.zh.md` |
+| 内部技术一页纸 | 2026-06-06 | One-pager | 面向内部技术 / 产品同步 Runtime Fabric 定位、已验证能力、证据、安全边界、风险和下一步 | `LAEL_INTERNAL_TECHNICAL_ONE_PAGER_2026-06-06.zh.md` |
+| 本会话阶段报告 | 2026-06-09 | Session report | 暂停 video voiceover refresh 前，汇总本会话开发项、验证过程、服务在线状态、截图证据和剩余风险 | `LAEL_SESSION_DEV_VERIFICATION_REPORT_2026-06-09.zh.md` |
 | 协作交接 | 2026-06-02 | 同事协作基线 | 形成 GitHub 分支、文档入口、运行方式、验证命令和协作边界说明 | `LAEL_COLLABORATION_HANDOFF_2026-06-02.zh.md` |
 | 下一会话交接 | 2026-06-02 | 新会话固定入口 | 新增根目录 `NEXT_SESSION_HANDOFF.md`，用于后续在新 Codex 会话中快速恢复项目上下文 | `NEXT_SESSION_HANDOFF.md` |
 
@@ -139,7 +145,152 @@ Identity -> Permission -> Execution -> Settlement -> Evidence -> Feedback -> Lea
 - Endless 不按 EVM add-network 处理。
 - Luffa App 独立扫码授权需要 App 端 QR session / callback / polling 协议，进入下一阶段。
 
-### 7. 下一会话交接入口
+### 7. Base Sepolia / Mainnet Guard / Endless QR
+
+2026-06-04 迭代把多链入口进一步推进为可重复验收路径。
+
+本阶段实现：
+
+- Base Sepolia 手工验收路径在前端 Manual Tests 中独立成项，要求真实 txHash、explorer link、receipt、feedback、learning 连贯展示。
+- Base Mainnet 引入双安全门：后端 `LAEL_ENABLE_MAINNET_EXECUTION` 默认关闭，前端还需要用户勾选 `mainnetRiskAccepted`；金额同时受 `LAEL_MAINNET_MAX_AMOUNT_ETH` 限制。
+- Endless / Luffa App 新增 QR session API：创建 session、查询状态、接收 App callback、生成 authorization receipt。
+- 前端 Endless lane 显示 `waiting`、`approved`、`rejected`、`expired`、`failed` 状态，并提供本地 mock callback 作为协议级验收工具。
+
+重要边界：
+
+- Base Mainnet 小额实测不是默认 MVP 能力。
+- Endless mock callback 不代表真实 Luffa App 联调完成。
+- WalletConnect / Project ID 仍不作为 MVP 能力展示。
+- Learning 仍不得自动提高额度、自动新增收款人或绕过人工确认。
+
+### 8. June 15 交付轨道
+
+2026-06-04 用户把当前阶段交付截止时间调整为 2026-06-15 前完成全部当前 deliverables。
+
+本阶段固定交付物：
+
+- Full MVP testing。
+- Wallet integration demo。
+- Real-environment test report。
+- Internal technical one-pager。
+- 3-5 分钟 intro / demo video，如 demo 稳定且时间允许。
+
+执行原则：
+
+- 先产出证据，而不是先做包装。
+- Base Sepolia 真实钱包闭环是关键路径。
+- Base Mainnet 只作为 safety gate 演示，不作为默认 MVP 能力。
+- Endless QR 当前可做协议级验收；真实 App callback 需要 App 端接入。
+- 任何 mock、simulated、proof-only 路径都必须在报告中明确标注。
+
+### 9. Wallet Integration Demo Script
+
+同日继续完成 Wallet Integration Demo 固定脚本。
+
+脚本主线：
+
+- Base Sepolia 真实钱包签名和 txHash。
+- LAEL execution receipt。
+- Submit Feedback 和 Learning。
+- Base Mainnet safety gate。
+- Endless QR authorization protocol。
+
+脚本明确使用已验证 txHash：
+
+```text
+0x1074ef6406df38baa790ee545d4288087938613a4b422cdef6e76b834806246b
+```
+
+脚本用途：
+
+- Wallet integration demo。
+- Real-environment test report 的执行依据。
+- 3-5 分钟 intro / demo video 的拍摄结构。
+
+### 10. Real-environment Test Report
+
+2026-06-04 产出真实环境测试报告第一版；2026-06-06 补齐截图证据并修复 evidence replay 被历史 duplicate block 卡住的问题。
+
+已记录证据：
+
+- Base Sepolia txHash 成功。
+- BaseScan Sepolia 显示 `Success`。
+- LAEL proposal、execute、feedback、memory API 成功。
+- Learning memory 记录 `ETH / BASE_SEPOLIA / Alice`。
+- `keep_human_confirmation` 策略建议仍保留。
+- 前端 completed receipt 截图显示 `0.00001 ETH`、`Settlement completed`、`Mode real`、`App auth approved`、真实 txHash 和 explorer link。
+- Feedback 截图显示 `Feedback Submitted`、`Agent score 0.90 -> 0.91`，并保留人工确认。
+- Base Mainnet guard 截图证明 mainnet 真实执行默认禁用。
+- Endless QR waiting 和 mock approved 截图证明 browser session / callback / polling 协议级验收路径。
+
+已修复：
+
+- 历史 completed proposal 导致同一 `0.00001 ETH` Base Sepolia evidence replay 被 `Duplicate transfer intent` block，进而使 `Approve & Record` 灰色不可点击。修复后 duplicate hard block 只覆盖短时间误重复，隔天证据回放不再阻塞验收。
+
+### 11. Internal Technical One-pager
+
+2026-06-06 新增内部技术一页纸，用于在产品、工程和协作同事之间快速同步当前 MVP 状态。
+
+覆盖范围：
+
+- Runtime Fabric 一句话定位。
+- Identity -> Permission -> Execution -> Settlement -> Evidence -> Feedback -> Learning 闭环。
+- Base Sepolia 真实 txHash、completed receipt、Feedback Submitted、Base Mainnet guard、Endless QR protocol-level evidence。
+- 主网、Endless mock、AGT extension、learning 自动化边界。
+- 后续优先级：真实 Luffa App QR / WebView callback、BNB / Solana 手工钱包证据、Task Reward 业务场景验收、receipt / learning UI 优化、Base Mainnet 小额实测评估。
+
+### 12. 本会话阶段报告
+
+2026-06-09 在暂停 HyperFrames voiceover refresh 前新增阶段报告。
+
+该报告记录：
+
+- 本会话已完成的前端稳定化、Base Sepolia 真实验收、Base Mainnet guard、Endless QR 协议级验收和文档交付。
+- 当前服务在线状态：API 3000、Frontend 3001、HyperFrames preview 3017。
+- 手工截图证据清单。
+- 自动化验证记录和需要最终重跑的标准验证命令。
+- Demo video 初版状态、Kokoro TTS 缓存状态、voiceover refresh 暂停点。
+- Python Kokoro TTS 安装带来的 `numpy` 版本注意事项。
+
+### 13. P0/P1/P2 原生 App 授权与 Task Reward
+
+2026-06-12 暂停 demo video 后，优先级切换到让 Luffa Fabric 从 demo 进入 Luffa 原生能力。
+
+本阶段目标：
+
+- P0：Luffa App QR / WebView 授权协议。
+- P1：Base / BNB / Solana / Endless 测试网真实钱包小额闭环证据。
+- P2：Task Reward 真实业务场景。
+
+本阶段实现：
+
+- Endless QR session 升级为 `luffa-endless-auth:v1`。
+- QR payload 增加 `businessAction`、`amount`、`asset`、`recipientAddress`、`callbackLocalOnly`、`signingMessage`。
+- `LAEL_PUBLIC_CALLBACK_BASE_URL` 支持 HTTPS tunnel callback。
+- 真实 Luffa App QR / WebView 联调要求 `LAEL_PUBLIC_CALLBACK_BASE_URL` 指向手机可访问的公网 HTTPS tunnel；Cloudflare quick tunnel 断开、出现 1033/530、URL 变化或 API 重启后，必须重启 API 并重新生成 QR，旧 QR 不再作为验收证据。
+- Luffa / Endless 钱包登录绑定拆为 `businessAction=login`，登录签名只证明账号控制权和 session nonce，不包含转账 intent、amount 或 recipient；业务转账和 Task Reward 才使用含 EDS/收款人/金额的授权签名。
+- `/v2/runtime-config` 暴露 public callback 配置状态，前端 Endless 面板显示当前 tunnel base URL、local-only 状态和 QR 刷新规则。
+- 真实 Luffa App callback 必须提交 `publicKey/fullMessage/signature` 并通过 session nonce 验签。
+- 2026-06-15 调试结论：Luffa App QR 登录和 signed callback 可以通过，但 Task Reward 真实交易在 App WebView bridge 的 `packageTransactionV2` / `signAndSubmitTransaction` 路径反复返回空 `rawData`、`1006/1009` 或 `GeneralError.invalidParameter`。该问题归类为 App bridge payload 兼容，不再继续用反复扫码验证真实 txHash。
+- 为完成 P1/P2 真实链上闭环，浏览器 Endless transfer / task_reward 新增官方 Endless Web Wallet SDK 路径：`connect` / `signMessage` / `signAndSubmitTransaction`，payload 使用 Endless bs58 地址、`AccountAddress.fromBs58String`、`u128` 金额和 ABI type tags；receipt 以 `walletType=endless-web-wallet`、`executionMode=real` 区分。
+- WebView bridge 和 QR scan 复用同一个 callback endpoint。
+- Mock callback 只保留为 `protocol_mock`，不能算真实 App 联调。
+- Payment Agent proposal / receipt 增加 `businessAction=task_reward`。
+- 前端增加 `Task Reward` 手工验收入口。
+
+本阶段新增报告：
+
+- `docs/LAEL_P0_P1_P2_NATIVE_APP_REWARD_VERIFICATION_REPORT_2026-06-12.zh.md`
+- `docs/LAEL_ENDLESS_WEB_WALLET_SESSION_REPORT_2026-06-15.zh.md`
+
+仍需手工补齐：
+
+- Luffa App 真实扫码或 WebView callback 截图；当前 public callback `https://lael.clawworld.eu.cc` 返回 Cloudflare 530 时不得扫码验收。
+- BNB Testnet 小额 txHash、BscScan testnet、receipt、feedback、learning 截图。
+- Solana Devnet signature、explorer、receipt、feedback、learning 截图。
+- Task Reward 业务场景端到端截图；2026-06-15 已完成 Endless Web Wallet binding / verify 和 `0.001 EDS` proposal，但真实 txHash 仍阻塞在 Web Wallet 弹窗解锁后 `Confirm` 灰色不可点。
+
+### 14. 下一会话交接入口
 
 为了避免长上下文影响后续开发，项目新增根目录 `NEXT_SESSION_HANDOFF.md`。
 
@@ -181,9 +332,9 @@ Mapping DID / Luffa DID
 
 1. 前端组件拆分和交互 polish。
 2. MetaMask / OKX / Phantom 连接状态细化。
-3. Endless / Luffa App WebView 与 QR 授权协议。
+3. Endless / Luffa App WebView 与 QR 授权协议真实 App 联调。
 4. AGT sidecar / MCP Security Gateway 的下一阶段 PoC。
-5. 浏览器截图验收报告。
+5. BNB / Solana / Endless / Task Reward 浏览器截图验收报告。
 6. Project Docs 与 docs/ 时间线持续同步。
 7. `NEXT_SESSION_HANDOFF.md` 持续维护，保证新会话可以快速恢复上下文。
 

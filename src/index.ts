@@ -10,6 +10,7 @@ export * from "./settlement/index.js";
 export * from "./settlement/adapters/index.js";
 export * from "./wallet/index.js";
 export * from "./chains/index.js";
+export * from "./endless-qr/index.js";
 export * from "./learning/index.js";
 export * from "./governance/index.js";
 export * from "./api/server.js";

@@ -127,10 +127,11 @@ export class WalletService {
       nonce: input.nonce,
     });
     const signatureMessage = input.signatureMessage ?? message;
+    const verificationAddress = input.publicKey ? normalizeAddress(input.publicKey, input.chainType) : address;
     const verified = await verifyWalletSignature({
       walletType: input.walletType,
       chainType: input.chainType,
-      address,
+      address: verificationAddress,
       message: signatureMessage,
       signature: input.signature,
     });
@@ -268,7 +269,7 @@ export function createDevWalletSignature(message: string, address: string): stri
   return `lael-dev:${sha256Hex({ message, address: address.toLowerCase() })}`;
 }
 
-async function verifyWalletSignature(input: {
+export async function verifyWalletSignature(input: {
   walletType: WalletType;
   chainType: WalletBinding["chainType"];
   address: string;
@@ -370,18 +371,19 @@ function normalizeEvmAddress(address: string): string {
 }
 
 function decodeFlexibleBytes(value: string): Uint8Array {
-  if (/^[a-fA-F0-9]+$/.test(value) && value.length % 2 === 0) {
-    return hexToBytes(value);
+  const normalized = value.startsWith("0x") || value.startsWith("0X") ? value.slice(2) : value;
+  if (/^[a-fA-F0-9]+$/.test(normalized) && normalized.length % 2 === 0) {
+    return hexToBytes(normalized);
   }
 
-  if ([...value].every((char) => BASE58_ALPHABET.includes(char))) {
-    return decodeBase58(value);
+  if ([...normalized].every((char) => BASE58_ALPHABET.includes(char))) {
+    return decodeBase58(normalized);
   }
 
   try {
-    return Uint8Array.from(Buffer.from(value, "base64"));
+    return Uint8Array.from(Buffer.from(normalized, "base64"));
   } catch {
-    return decodeBase58(value);
+    return decodeBase58(normalized);
   }
 }
 

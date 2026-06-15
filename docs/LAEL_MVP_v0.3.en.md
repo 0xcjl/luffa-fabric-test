@@ -70,7 +70,7 @@ Michael connects a wallet and switches to Base Sepolia. The system binds the own
 Michael asks the agent:
 
 ```text
-Send 0.0001 ETH to Alice
+Send 0.00001 ETH to Alice
 ```
 
 LAEL executes:
@@ -127,6 +127,7 @@ This proves that fiat can enter LAEL as settlement proof without turning the MVP
 | --- | --- |
 | VARR runtime | Sidecar runtime, capability, context, receipt, and learning tests exist. |
 | Payment Agent transfer | Base Sepolia ETH/USDC, BNB Testnet, Solana Devnet, and Endless Testnet / Luffa App proposal, wallet signing / app authorization, receipt, feedback, and memory exist. |
+| Task Reward business flow | `businessAction=task_reward` proposal, wallet / Luffa App authorization, settlement receipt, feedback, and learning signal exist. |
 | Settlement adapter | Luffa Points, EVM native, EVM ERC20, Solana native / SPL abstraction, and Endless native / Luffa App authorization abstraction exist. |
 | Swap proposal | Simulated value-agent flow exists and does not connect to a real DEX. |
 | Fiat/invoice proof | Proof settlement rails exist and do not connect to real Stripe, banks, or on/off-ramp providers. |
@@ -139,10 +140,12 @@ This proves that fiat can enter LAEL as settlement proof without turning the MVP
 | Base Sepolia / Base Mainnet | Sepolia supports real EVM wallet signature plus txHash receipt; Mainnet supports connection, proposal, and permission display only | MetaMask / OKX Wallet | Base Sepolia remains the default primary demo chain; Mainnet real execution is disabled by default. |
 | BNB Testnet / BNB Mainnet | Testnet supports real EVM wallet signature plus txHash receipt; Mainnet supports connection, proposal, and permission display only | MetaMask / OKX Wallet | Frontend provides Add BNB Testnet to OKX action; Mainnet real execution is disabled by default. |
 | Solana Devnet / Solana Mainnet | Devnet supports wallet binding plus signature receipt; Mainnet supports connection, proposal, and permission display only | Phantom / Solana Wallet | Current scope prioritizes SOL native; real SPL token transfer is future expansion. |
-| Endless Testnet / Luffa App | Luffa App / Endless SDK connect, signMessage, signAndSubmitTransaction | `@luffalab/luffa-endless-sdk` | Endless is not handled as an EVM add-network flow. |
+| Endless Testnet / Luffa App | Luffa App / Endless SDK connect, signMessage, signAndSubmitTransaction, and `luffa-endless-auth:v1` QR / WebView signed callback | `@luffalab/luffa-endless-sdk` / QR session API | Endless is not handled as an EVM add-network flow; real App callback must be signature verified. |
 
 Current boundaries:
 
 - Native OKX Endless support requires OKX to expose an Endless provider or support the Endless Wallet Standard.
-- Standalone Luffa App QR authorization requires an app-side QR session, callback, or polling protocol.
+- Standalone Luffa App QR authorization is upgraded to `luffa-endless-auth:v1`; mock callback only creates a `protocol_mock` receipt, while real App callback must include `publicKey/fullMessage/signature` and pass verification.
 - Mainnet real-value execution is not the current MVP default path.
+
+2026-06-12 update: see `LAEL_P0_P1_P2_NATIVE_APP_REWARD_VERIFICATION_REPORT_2026-06-12.zh.md`. This round stops demo-video work and prioritizes real Luffa App QR / WebView authorization, BNB / Solana / Endless manual evidence, and the Task Reward business scenario.

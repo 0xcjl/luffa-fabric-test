@@ -94,6 +94,7 @@ describe("LuffaFabric External MVP v0.2 payment agent loop", () => {
       };
     };
     expect(proposal.rawInput).toBe("帮我转 0.01 USDC 给 Alice");
+    expect(proposal).toMatchObject({ businessAction: "transfer" });
     expect(proposal.parsedIntent).toMatchObject({
       amount: 0.01,
       asset: "USDC",
@@ -196,10 +197,12 @@ describe("LuffaFabric External MVP v0.2 payment agent loop", () => {
     });
     expect(second.statusCode).toBe(201);
     const secondProposal = second.json() as {
+      businessAction: string;
       parsedIntent: { amount: number; asset: string; recipientName: string; chainKey: string };
       learningContext: { usedMemory: boolean; memoryKeys: string[] };
       permissionDecision: { status: string; requiresHumanConfirmation: boolean };
     };
+    expect(secondProposal.businessAction).toBe("task_reward");
     expect(secondProposal.parsedIntent).toMatchObject({
       amount: 0.01,
       asset: "USDC",
@@ -213,6 +216,43 @@ describe("LuffaFabric External MVP v0.2 payment agent loop", () => {
     expect(secondProposal.permissionDecision).toMatchObject({
       status: "allow_pending_human_confirmation",
       requiresHumanConfirmation: true,
+    });
+
+    await app.close();
+  });
+
+  it("blocks incomplete proposal input instead of returning 500 when recipients are missing", async () => {
+    const { app } = await buildServer({ path: ":memory:" });
+    const response = await app.inject({
+      method: "POST",
+      url: "/v2/payment-agent/proposals",
+      payload: {
+        ownerRef,
+        walletAddress,
+        rawInput: "Prepare 0.0001 EDS transfer proposal to Alice with Luffa App on Endless testnet",
+        defaultAsset: "EDS",
+        policy: {
+          maxAmount: 0.001,
+          maxDailyAmount: 0.005,
+          allowedRecipientNames: ["Alice"],
+          allowedAssets: ["EDS"],
+          allowedChain: "ENDLESS_TESTNET",
+          requiresHumanConfirmation: true,
+        },
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toMatchObject({
+      parsedIntent: {
+        recipientName: "Alice",
+        recipientAddress: "",
+        chainKey: "ENDLESS_TESTNET",
+      },
+      permissionDecision: {
+        status: "blocked",
+        reason: "Recipient missing",
+      },
     });
 
     await app.close();
@@ -266,7 +306,7 @@ describe("LuffaFabric External MVP v0.2 payment agent loop", () => {
   });
 
   it("blocks v0.1 required recipient, network, missing confirmation, and duplicate risks", async () => {
-    const { app } = await buildServer({ path: ":memory:" });
+    const { app, lael } = await buildServer({ path: ":memory:" });
     await bindWallet(app);
 
     const notAllowlisted = await app.inject({
@@ -327,6 +367,26 @@ describe("LuffaFabric External MVP v0.2 payment agent loop", () => {
       error: "Human confirmation is required",
     });
 
+    const duplicateDraft = await app.inject({
+      method: "POST",
+      url: "/v2/payment-agent/proposals",
+      payload: proposalPayload("帮我转 0.01 USDC 给 Alice，用来支付测试任务奖励"),
+    });
+    expect(duplicateDraft.statusCode).toBe(201);
+
+    const executed = await app.inject({
+      method: "POST",
+      url: `/v2/payment-agent/proposals/${proposal.proposalId}/execute`,
+      payload: {
+        humanConfirmed: true,
+        txHash: "0xduplicatecompleted001",
+        walletType: "okx-injected",
+        executionMode: "real",
+        appAuthorizationStatus: "approved",
+      },
+    });
+    expect(executed.statusCode).toBe(201);
+
     const duplicate = await app.inject({
       method: "POST",
       url: "/v2/payment-agent/proposals",
@@ -343,6 +403,23 @@ describe("LuffaFabric External MVP v0.2 payment agent loop", () => {
           type: "duplicate_transfer_block",
           learnedFromFailure: true,
         },
+      },
+    });
+
+    lael.db.db
+      .prepare("UPDATE payment_agent_proposals SET created_at = ? WHERE proposal_id = ?")
+      .run(new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), proposal.proposalId);
+
+    const staleEvidenceReplay = await app.inject({
+      method: "POST",
+      url: "/v2/payment-agent/proposals",
+      payload: proposalPayload("帮我转 0.01 USDC 给 Alice，用来支付测试任务奖励"),
+    });
+    expect(staleEvidenceReplay.statusCode).toBe(201);
+    expect(staleEvidenceReplay.json()).toMatchObject({
+      permissionDecision: {
+        status: "allow_pending_human_confirmation",
+        reason: "Within policy; explicit wallet confirmation required",
       },
     });
 
@@ -369,6 +446,181 @@ describe("LuffaFabric External MVP v0.2 payment agent loop", () => {
       },
       permissionDecision: {
         status: "allow_pending_human_confirmation",
+      },
+    });
+
+    await app.close();
+  });
+
+  it("runs the task reward business scenario through receipt, feedback, and learning", async () => {
+    const { app } = await buildServer({ path: ":memory:" });
+    await bindWallet(app);
+
+    const proposed = await app.inject({
+      method: "POST",
+      url: "/v2/payment-agent/proposals",
+      payload: {
+        ...proposalPayload("Agent complete a small task and reward 0.01 USDC to Alice", 0.05),
+        businessAction: "task_reward",
+      },
+    });
+    expect(proposed.statusCode).toBe(201);
+    const proposal = proposed.json() as { proposalId: string };
+    expect(proposed.json()).toMatchObject({
+      businessAction: "task_reward",
+      parsedIntent: {
+        amount: 0.01,
+        asset: "USDC",
+        recipientName: "Alice",
+        chainKey: "BASE_SEPOLIA",
+      },
+      permissionDecision: { status: "allow_pending_human_confirmation" },
+    });
+
+    const executed = await app.inject({
+      method: "POST",
+      url: `/v2/payment-agent/proposals/${proposal.proposalId}/execute`,
+      payload: {
+        humanConfirmed: true,
+        walletType: "okx-injected",
+        txHash: "0xtaskreward001",
+        executionMode: "real",
+        appAuthorizationStatus: "approved",
+      },
+    });
+    expect(executed.statusCode).toBe(201);
+    const receipt = executed.json() as { executionId: string };
+    expect(executed.json()).toMatchObject({
+      receipt: {
+        businessAction: "task_reward",
+        rawInput: "Agent complete a small task and reward 0.01 USDC to Alice",
+        walletTx: {
+          chainKey: "BASE_SEPOLIA",
+          txHash: "0xtaskreward001",
+          executionMode: "real",
+          appAuthorizationStatus: "approved",
+        },
+        settlementResult: { status: "completed" },
+        learningStatus: { status: "pending_feedback" },
+      },
+    });
+
+    const feedback = await app.inject({
+      method: "POST",
+      url: `/v2/payment-agent/receipts/${receipt.executionId}/feedback`,
+      payload: {
+        score: 5,
+        taskCompletedCorrectly: true,
+        comment: "Reward task completed",
+        rememberPreferences: true,
+        allowTrainingExport: false,
+      },
+    });
+    expect(feedback.statusCode).toBe(201);
+    expect(feedback.json()).toMatchObject({
+      receipt: {
+        businessAction: "task_reward",
+        feedback: {
+          taskCompletedCorrectly: true,
+          comment: "Reward task completed",
+        },
+        learningStatus: { status: "updated" },
+      },
+      learningUpdate: {
+        userPreferences: {
+          preferredRecipientName: "Alice",
+          preferredAmount: 0.01,
+          preferredAsset: "USDC",
+          preferredChainKey: "BASE_SEPOLIA",
+        },
+        policySuggestion: { type: "keep_human_confirmation" },
+      },
+    });
+
+    await app.close();
+  });
+
+  it("scopes execution policy to the current task reward proposal", async () => {
+    const { app, lael } = await buildServer({ path: ":memory:" });
+
+    await lael.createPolicy({
+      ownerRef,
+      priority: 100,
+      jsonRules: {
+        allowedActions: ["luffa.create_task"],
+        maxBudgetPerAction: 0.0001,
+        allowedAssets: ["ETH"],
+        allowedChains: ["BASE_SEPOLIA"],
+      },
+    });
+
+    const proposed = await app.inject({
+      method: "POST",
+      url: "/v2/payment-agent/proposals",
+      payload: {
+        ownerRef,
+        walletAddress: "Jfr5NG3VB9JaqhoRhHL8fbZdWYGwhghNCVhGkXEdxLRDm3UNmKrrqSxZvrtW",
+        rawInput: "Agent complete a small task and reward 0.001 EDS to Alice with Luffa App on Endless mainnet",
+        defaultAsset: "EDS",
+        businessAction: "task_reward",
+        recipients: [{ name: "Alice", address: aliceAddress }],
+        policy: {
+          maxAmount: 0.001,
+          maxDailyAmount: 0.005,
+          allowedRecipientNames: ["Alice"],
+          allowedAssets: ["EDS"],
+          allowedChain: "ENDLESS_MAINNET",
+          requiresHumanConfirmation: true,
+        },
+      },
+    });
+    expect(proposed.statusCode).toBe(201);
+    const proposal = proposed.json() as { proposalId: string };
+
+    const missingTxHash = await app.inject({
+      method: "POST",
+      url: `/v2/payment-agent/proposals/${proposal.proposalId}/execute`,
+      payload: {
+        humanConfirmed: true,
+        walletType: "luffa",
+        executionMode: "sdk-ready",
+        appAuthorizationStatus: "approved",
+      },
+    });
+    expect(missingTxHash.statusCode).toBe(400);
+    expect(missingTxHash.json()).toMatchObject({
+      error: "Endless value execution requires a real txHash from Endless Web Wallet or Luffa App",
+    });
+
+    const executed = await app.inject({
+      method: "POST",
+      url: `/v2/payment-agent/proposals/${proposal.proposalId}/execute`,
+      payload: {
+        humanConfirmed: true,
+        walletType: "luffa",
+        txHash: "0xendlessmainnetreward001",
+        executionMode: "app-authorized",
+        appAuthorizationStatus: "approved",
+      },
+    });
+    expect(executed.statusCode).toBe(201);
+    expect(executed.json()).toMatchObject({
+      receipt: {
+        businessAction: "task_reward",
+        parsedIntent: {
+          amount: 0.001,
+          asset: "EDS",
+          chainKey: "ENDLESS_MAINNET",
+        },
+        walletTx: {
+          chainKey: "ENDLESS_MAINNET",
+          chainType: "endless",
+          walletType: "luffa",
+          txHash: "0xendlessmainnetreward001",
+          executionMode: "app-authorized",
+          appAuthorizationStatus: "approved",
+        },
+        settlementResult: { status: "completed" },
       },
     });
 
@@ -461,6 +713,26 @@ describe("LuffaFabric External MVP v0.2 payment agent loop", () => {
       parsedIntent: { chainKey: "ENDLESS_TESTNET", asset: "EDS" },
     });
 
+    const endlessMainnet = await app.inject({
+      method: "POST",
+      url: "/v2/payment-agent/proposals",
+      payload: {
+        ...proposalPayload("Prepare 0.0001 EDS transfer proposal to Alice with Luffa App on Endless mainnet", 0.001),
+        defaultAsset: "EDS",
+        recipients: [{ name: "Alice", address: "0x0000000000000000000000000000000000000000000000000000000000000002" }],
+        policy: {
+          ...proposalPayload("Prepare 0.0001 EDS transfer proposal to Alice with Luffa App on Endless mainnet", 0.001).policy,
+          allowedAssets: ["EDS"],
+          allowedChain: "ENDLESS_MAINNET",
+        },
+      },
+    });
+    expect(endlessMainnet.statusCode).toBe(201);
+    expect(endlessMainnet.json()).toMatchObject({
+      parsedIntent: { chainKey: "ENDLESS_MAINNET", asset: "EDS" },
+      permissionDecision: { status: "allow_pending_human_confirmation" },
+    });
+
     const rejectedEndless = await app.inject({
       method: "POST",
       url: `/v2/payment-agent/proposals/${endlessProposal.proposalId}/execute`,
@@ -471,18 +743,9 @@ describe("LuffaFabric External MVP v0.2 payment agent loop", () => {
         appAuthorizationStatus: "rejected",
       },
     });
-    expect(rejectedEndless.statusCode).toBe(201);
+    expect(rejectedEndless.statusCode).toBe(400);
     expect(rejectedEndless.json()).toMatchObject({
-      receipt: {
-        walletTx: {
-          chainKey: "ENDLESS_TESTNET",
-          chainType: "endless",
-          walletType: "luffa",
-          executionMode: "sdk-ready",
-          appAuthorizationStatus: "rejected",
-        },
-        settlementResult: { status: "failed" },
-      },
+      error: "Endless value execution requires a real txHash from Endless Web Wallet or Luffa App",
     });
 
     await app.close();

@@ -22,7 +22,8 @@
     "test:integration": "vitest run tests/integration.test.ts",
     "test:e2e": "vitest run tests/e2e",
     "test:wallet": "vitest run tests/wallet.test.ts",
-    "test:settlement": "vitest run tests/settlement-adapters.test.ts"
+    "test:settlement": "vitest run tests/settlement-adapters.test.ts",
+    "health:luffa-app": "node scripts/check-luffa-app-tunnel.mjs"
   },
   "engines": {
     "node": ">=20 <27"

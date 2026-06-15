@@ -1,6 +1,6 @@
 # NEXT SESSION HANDOFF
 
-更新时间：2026-06-02
+更新时间：2026-06-15
 
 ## 用途
 
@@ -92,8 +92,15 @@ LAEL / Luffa Fabric 是统一 Agent Runtime Fabric，包含 Off-chain Runtime、
 6. `docs/LAEL_MVP_v0.3.zh.md`
 7. `docs/LAEL_TEST_PLAN_v0.3.zh.md`
 8. `docs/LAEL_MULTICHAIN_WALLET_SUPPORT_TEST_REPORT_2026-06-02.zh.md`
-9. `docs/LAEL_AGT_INTEGRATION_v0.3.zh.md`
-10. `docs/LAEL_AGT_IMPLEMENTATION_PLAN_2026-06-02.zh.md`
+9. `docs/LAEL_BASE_SEPOLIA_ACCEPTANCE_REPORT_2026-06-04.zh.md`
+10. `docs/LAEL_MVP_ACCEPTANCE_MATRIX_2026-06-04.zh.md`
+11. `docs/LAEL_WALLET_INTEGRATION_DEMO_SCRIPT_2026-06-04.zh.md`
+12. `docs/LAEL_REAL_ENVIRONMENT_TEST_REPORT_2026-06-04.zh.md`
+13. `docs/LAEL_INTERNAL_TECHNICAL_ONE_PAGER_2026-06-06.zh.md`
+14. `docs/LAEL_AGT_INTEGRATION_v0.3.zh.md`
+15. `docs/LAEL_AGT_IMPLEMENTATION_PLAN_2026-06-02.zh.md`
+16. `docs/LAEL_P0_P1_P2_NATIVE_APP_REWARD_VERIFICATION_REPORT_2026-06-12.zh.md`
+17. `docs/LAEL_ENDLESS_WEB_WALLET_SESSION_REPORT_2026-06-15.zh.md`
 
 ## 当前能力摘要
 
@@ -101,20 +108,35 @@ LAEL / Luffa Fabric 是统一 Agent Runtime Fabric，包含 Off-chain Runtime、
 - Project Docs：前端项目文档入口，说明定位、架构、流程、模块、操作、注意事项和文档索引。
 - Microsoft AGT Adapter PoC：作为 Governance Extension 的可选治理积木。
 - 多链钱包：Base、BNB、Solana、Endless 的主网和测试网展示。
-- 钱包入口：MetaMask / OKX Wallet、Phantom / Solana Wallet、Luffa App / Endless SDK。
+- 钱包入口：MetaMask / OKX Wallet、Phantom / Solana Wallet、Endless Web Wallet、Luffa App / Endless SDK。
+- Base Sepolia acceptance：作为默认真实链上手工验收主线，前端 Manual Tests 展示 txHash、explorer link、receipt、feedback、learning 路径。
+- Base Mainnet guard：默认禁用真实价值执行；需要 `LAEL_ENABLE_MAINNET_EXECUTION=true`、页面 `mainnetRiskAccepted` 和 `LAEL_MAINNET_MAX_AMOUNT_ETH` 金额上限。
+- Endless QR / WebView authorization：支持 `luffa-endless-auth:v1` browser session、signed QR payload、callback、polling、authorization receipt；真实 App callback 必须带 `publicKey/fullMessage/signature` 并通过验签。P0 原生协议验收继续保留在 Luffa App QR。
+- Endless Web Wallet execution：为避免 Luffa App WebView bridge 在 `packageTransactionV2` / `signAndSubmitTransaction` payload 上反复返回空 `rawData`、`1006/1009` 或 `GeneralError.invalidParameter`，P1/P2 的真实 Endless 链上 txHash 优先走官方 `@endlesslab/endless-web3-sdk`；交易 payload 使用 `AccountAddress.fromBs58String`、`u128` 金额和 ABI type tags。
+- Task Reward business flow：支持 `businessAction=task_reward` proposal、wallet / Endless Web Wallet / Luffa App authorization、settlement receipt、feedback 和 learning signal。
+- June 15 delivery track：当前阶段所有 deliverables 需要在 2026-06-15 前完成，关键路径是 Base Sepolia 真实钱包验收和 real-environment report。
+- Wallet Integration Demo Script：已有 3-5 分钟演示脚本，以真实 Base Sepolia txHash、receipt、feedback/learning、mainnet guard 和 Endless QR 为主线。
+- Real-environment Test Report：已补齐 Base Sepolia 钱包、BaseScan、completed receipt、Feedback Submitted、Base Mainnet guard、Endless QR waiting / mock approved 截图证据。
+- Internal Technical One-pager：已完成一页内部技术摘要，覆盖 Runtime Fabric 定位、已验证能力、证据、安全边界、风险和下一步。
 - QA Runner：本地白名单自动化测试入口。
 - Evidence / Learning：展示 receipt、trace digest、sensitivity、learning item、policy suggestion。
 
 ## 安全边界
 
-- 主网真实价值执行默认禁用；主网只做连接、proposal、permission 展示。
+- 主网真实价值执行默认禁用；Base Mainnet 小额实测必须同时满足 env gate、页面二次确认和金额上限。
 - WalletConnect / Project ID 当前不作为 MVP 能力展示。
 - Microsoft AGT 不替代 Luffa DID、wallet signing、settlement、receipt 或 learning。
 - Learning 不自动提高额度。
 - Learning 不自动加入新收款人。
 - Learning 不绕过人工确认。
 - Learning 不自动导出训练数据。
-- Endless / Luffa App 独立二维码授权需要 App 端 QR session / callback / polling 协议，属于下一阶段。
+- Endless / Luffa App 独立二维码授权已升级为 `luffa-endless-auth:v1`；`protocol_mock` 不能算真实 App 联调完成。
+- Endless / Luffa App 登录绑定必须使用 `businessAction=login`，签名消息不得夹带转账 intent、amount 或 recipient；转账 / Task Reward 才使用业务授权签名。
+- 真实 Luffa App callback 缺少 `publicKey/fullMessage/signature`、session nonce 不匹配或重复 callback 时必须拒绝。
+- 真实 Luffa App QR / WebView callback 必须配置 `LAEL_PUBLIC_CALLBACK_BASE_URL=https://...` 公网 HTTPS tunnel；未配置时 `callbackLocalOnly=true`，只能算本地协议验收。
+- Cloudflare quick tunnel 是临时地址，已在本地 P0/P1 联调中多次出现 530 / WebView 重复授权弹窗；真实 Luffa App 验收优先使用 named tunnel `lael-luffa-app-dev` 和 `https://lael.clawworld.eu.cc`。
+- 每次真实 Luffa App 扫码前必须先跑 `npm run health:luffa-app`；该检查覆盖本地 API、前端、public callback runtime config、连续公网 HTTPS 探测和临时 QR `/scan` 页面。失败时不要扫码，先重启 tunnel / API 并生成新 QR。
+- Luffa App QR 登录/授权不等于真实链上 txHash。当前真实 Endless testnet/mainnet 小额 transfer / task_reward 验证优先使用 Endless Web Wallet；Luffa App bridge 的真实交易提交仍需 App 端确认支持的 `packageTransactionV2` payload 格式后再恢复为主线。
 
 ## 标准验证命令
 
@@ -127,24 +149,45 @@ cd src/frontend && NEXT_PUBLIC_LAEL_API_URL=http://127.0.0.1:3000 npm run build
 
 ## 当前验证状态
 
-最近一次完整验证：
+最近一次完整验证（2026-06-12）：
 
 - TypeScript root check：通过。
-- Root vitest：17 files / 130 tests 通过。
+- Targeted P0/P1/P2 vitest：6 files / 59 tests 通过。
+- Root vitest：18 files / 145 tests 通过。
 - VARR tests：31 tests 通过。
 - Frontend build：通过。
+- Local smoke：API `/v2/payment-agent/memory/did:luffa:user_001` 200；Frontend `/` 200；Chrome headless 点击 `Task Reward` 后显示 proposal、`Business action` 和 `task_reward`。
 
 新会话继续开发前，如涉及代码或文档测试，请重新运行相关验证，不要只依赖本记录。
+
+本轮定向验证（2026-06-15）：
+
+- TypeScript root check：通过，`./node_modules/.bin/tsc -p tsconfig.json --noEmit`。
+- Targeted P0/P1/P2 vitest：4 files / 30 tests 通过，覆盖 `tests/endless-qr.test.ts`、`tests/mvp2-payment-agent.test.ts`、`tests/frontend-wallet-menu.test.ts`、`tests/project-docs.test.ts`。
+- Endless Web Wallet SDK 已加入前端依赖：`@endlesslab/endless-web3-sdk`。普通浏览器里的 Endless value tx 不再默认要求用户反复扫码 Luffa App，而是调用 Web Wallet `connect` / `signMessage` / `signAndSubmitTransaction`。
+- 2026-06-15 会话报告：`docs/LAEL_ENDLESS_WEB_WALLET_SESSION_REPORT_2026-06-15.zh.md`。当前 P2 Task Reward 已能生成 `0.001 EDS` proposal 并完成 Web Wallet binding / verify；真实 txHash 仍未完成，当前阻塞在 Endless Web Wallet 弹窗解锁后 `Confirm` 按钮灰色不可点。
+
+当前服务状态记录（2026-06-12）：
+
+- 本轮停止 demo video 工作；未生成新版 narration，未 retime，未重建 MP4。
+- 本轮阶段报告：`docs/LAEL_P0_P1_P2_NATIVE_APP_REWARD_VERIFICATION_REPORT_2026-06-12.zh.md`。
+- 若要做真实 Luffa App callback，需启动 API / Frontend，并配置 `LAEL_PUBLIC_CALLBACK_BASE_URL=https://...` 为手机可访问的公网 HTTPS tunnel。
+- 稳定 Cloudflare named tunnel：`/Users/xyz/.cloudflared/lael-luffa-app-dev.yml` 必须固定 `protocol: http2`，再运行 `cloudflared tunnel --config /Users/xyz/.cloudflared/lael-luffa-app-dev.yml run lael-luffa-app-dev`；API 使用 `LAEL_PORT=3000 LAEL_PUBLIC_CALLBACK_BASE_URL=https://lael.clawworld.eu.cc node dist/index.js`。
+- Quick tunnel 只作为 fallback：`cloudflared tunnel --url http://127.0.0.1:3000 --protocol http2 --no-autoupdate`；拿到新 `trycloudflare.com` 地址后，重启 API：`LAEL_PORT=3000 LAEL_PUBLIC_CALLBACK_BASE_URL=https://<current-tunnel-host> node dist/index.js`。
+- 任何 tunnel URL 变化、Cloudflare 1033/530、API 进程重启，都会让旧 QR / 旧 session 不再可用于真实 App 验收；必须重新点击 Endless Testnet / Luffa App 生成新 QR。
+- `/scan` 页面已加单 session 防重复提交保护；signed callback 成功后，同一 session 的 WebView reload 应显示已提交状态，不应再次触发签名弹窗。
+- 扫码前固定执行：`npm run health:luffa-app`。只有 `ok: true` 且 `endless.scan-page.public` 通过时，才进入真实 App 扫码验收。
+- 本轮验证结束后已停止 API / Frontend；3000 / 3001 端口已释放。
 
 ## 下一步建议
 
 优先候选：
 
-1. 拆分 `src/frontend/app/page.tsx`，降低前端主页面复杂度。
-2. 完善 MetaMask / OKX / Phantom 连接状态和网络切换提示。
-3. 设计 Endless / Luffa App QR session / callback / polling 协议。
-4. 推进 AGT sidecar / MCP Security Gateway 的下一阶段 PoC。
-5. 补浏览器截图验收报告，并同步到 `docs/assets/`。
+1. 重启 API / frontend / Cloudflare named tunnel，并确认 `http://127.0.0.1:3000`、`http://127.0.0.1:3001`、`https://lael.clawworld.eu.cc/v2/runtime-config` 都 ready。
+2. 继续 Endless Web Wallet `task_reward` 调试：检查 sender account、recipient account、testnet EDS/gas 余额和 `signAndSubmitTransaction` options，解决钱包 `Confirm` 灰色不可点后拿真实 txHash。
+3. 拿到真实 txHash 后完成 `Approve & Record`、feedback、learning，并更新 `docs/LAEL_ENDLESS_WEB_WALLET_SESSION_REPORT_2026-06-15.zh.md`。
+4. 补齐 BNB Testnet 和 Solana Devnet 小额钱包手工证据。
+5. 最终交付前重跑 TypeScript、root vitest、VARR tests、frontend build 和 local smoke。
 
 ## 维护规则
 

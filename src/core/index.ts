@@ -439,6 +439,8 @@ export class LAEL {
       tokenAddress: stringValue(source.tokenAddress),
       txHash: stringValue(source.txHash),
       signedTransaction: stringValue(source.signedTransaction),
+      appAuthorizationStatus: walletAuthorizationStatus(source.appAuthorizationStatus),
+      executionMode: settlementExecutionMode(source.executionMode),
       metadata: objectLike(source.metadata),
       schemaVersion: request.schemaVersion,
       apiVersion: request.apiVersion,
@@ -452,6 +454,12 @@ export class LAEL {
   ): string | undefined {
     const settlementInstruction = this.buildSettlementInstruction(request, executionId, agent);
     if (!settlementInstruction || settlementInstruction.rail === "luffa-points") {
+      return undefined;
+    }
+    if (
+      settlementInstruction.chainType === "endless" &&
+      settlementInstruction.appAuthorizationStatus === "approved"
+    ) {
       return undefined;
     }
 
@@ -534,8 +542,10 @@ function settlementAsset(value: unknown): SettlementAsset | undefined {
     "ETH",
     "USDC",
     "USDT",
+    "BNB",
     "SOL",
     "SPL_TOKEN",
+    "EDS",
   ];
   return typeof value === "string" && allowed.includes(value as SettlementAsset)
     ? (value as SettlementAsset)
@@ -549,9 +559,38 @@ function settlementRail(value: unknown): SettlementRail | undefined {
     "evm-erc20",
     "solana-native",
     "solana-spl",
+    "endless-native",
   ];
   return typeof value === "string" && allowed.includes(value as SettlementRail)
     ? (value as SettlementRail)
+    : undefined;
+}
+
+function walletAuthorizationStatus(
+  value: unknown,
+): SettlementInstruction["appAuthorizationStatus"] {
+  const allowed: Array<NonNullable<SettlementInstruction["appAuthorizationStatus"]>> = [
+    "approved",
+    "rejected",
+    "unavailable",
+    "simulated",
+  ];
+  return typeof value === "string" && allowed.includes(value as NonNullable<SettlementInstruction["appAuthorizationStatus"]>)
+    ? (value as NonNullable<SettlementInstruction["appAuthorizationStatus"]>)
+    : undefined;
+}
+
+function settlementExecutionMode(
+  value: unknown,
+): SettlementInstruction["executionMode"] {
+  const allowed: Array<NonNullable<SettlementInstruction["executionMode"]>> = [
+    "real",
+    "simulated",
+    "sdk-ready",
+    "app-authorized",
+  ];
+  return typeof value === "string" && allowed.includes(value as NonNullable<SettlementInstruction["executionMode"]>)
+    ? (value as NonNullable<SettlementInstruction["executionMode"]>)
     : undefined;
 }
 
@@ -561,6 +600,9 @@ function defaultRailForAsset(asset: SettlementAsset, chainType: unknown): Settle
   }
   if (asset === "SOL") {
     return "solana-native";
+  }
+  if (asset === "EDS" || chainType === "endless") {
+    return "endless-native";
   }
   if (asset === "SPL_TOKEN" || chainType === "solana") {
     return "solana-spl";

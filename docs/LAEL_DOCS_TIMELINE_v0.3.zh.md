@@ -2,7 +2,7 @@
 
 > 目的：把 LAEL / Luffa Fabric v0.3 的需求、MVP、测试方案、实施计划和测试报告按时间先后整理清楚，便于 GitHub 阅读、审查和后续交接。  
 > 当前分支：`codex/varr-api-route-fixes`  
-> 更新范围：文档索引与报告映射，不改变业务代码。
+> 更新范围：文档索引、报告映射、Base Sepolia / Mainnet Guard / Endless QR 验收入口、2026-06-06 真实环境截图证据、2026-06-12 P0/P1/P2 原生 App 授权和 Task Reward 主线，以及 2026-06-15 Endless Web Wallet 真实 txHash 路径调试状态。
 
 ## 1. 推荐阅读顺序
 
@@ -20,8 +20,16 @@
 12. `LAEL_AGT_IMPLEMENTATION_PLAN_2026-06-02.zh.md`
 13. `LAEL_AGT_BROWSER_ACCEPTANCE_REPORT_2026-06-02.zh.md`
 14. `LAEL_MULTICHAIN_WALLET_SUPPORT_TEST_REPORT_2026-06-02.zh.md`
-15. `LAEL_PROJECT_ITERATION_HISTORY_2026-06-02.zh.md`
-16. `LAEL_COLLABORATION_HANDOFF_2026-06-02.zh.md`
+15. `LAEL_BASE_SEPOLIA_ACCEPTANCE_REPORT_2026-06-04.zh.md`
+16. `LAEL_MVP_ACCEPTANCE_MATRIX_2026-06-04.zh.md`
+17. `LAEL_WALLET_INTEGRATION_DEMO_SCRIPT_2026-06-04.zh.md`
+18. `LAEL_REAL_ENVIRONMENT_TEST_REPORT_2026-06-04.zh.md`
+19. `LAEL_INTERNAL_TECHNICAL_ONE_PAGER_2026-06-06.zh.md`
+20. `LAEL_SESSION_DEV_VERIFICATION_REPORT_2026-06-09.zh.md`
+21. `LAEL_P0_P1_P2_NATIVE_APP_REWARD_VERIFICATION_REPORT_2026-06-12.zh.md`
+22. `LAEL_ENDLESS_WEB_WALLET_SESSION_REPORT_2026-06-15.zh.md`
+23. `LAEL_PROJECT_ITERATION_HISTORY_2026-06-02.zh.md`
+24. `LAEL_COLLABORATION_HANDOFF_2026-06-02.zh.md`
 
 ## 2. 时间线总表
 
@@ -40,9 +48,19 @@
 | 11 | Microsoft AGT 未来阶段落地规划 | `LAEL_AGT_IMPLEMENTATION_PLAN_2026-06-02.zh.md` | 本文件定义未来阶段测试方向 | 后续浏览器验收报告 | 当前 MVP 只保留 Adapter PoC、前端展示和 evidence mapping；sidecar、MCP gateway、fork gate 留到未来阶段 |
 | 12 | Microsoft AGT 浏览器验收 | `LAEL_AGT_BROWSER_ACCEPTANCE_REPORT_2026-06-02.zh.md` | `LAEL_AGT_IMPLEMENTATION_PLAN_2026-06-02.zh.md` | 本文件即验收报告 | 覆盖 Execution Loop Console、Runtime Agent、AGT evidence、Learning UI |
 | 13 | 多链钱包支持 | `LAEL_MULTICHAIN_WALLET_SUPPORT_TEST_REPORT_2026-06-02.zh.md` | `LAEL_TEST_PLAN_v0.3.zh.md` / Project Docs 多链章节 | 本文件即测试报告 | 覆盖 BNB Testnet、Solana Devnet、Endless Testnet / Luffa App、OKX 支持边界、Luffa App QR 下一阶段规划 |
-| 14 | 项目迭代过程 | `LAEL_PROJECT_ITERATION_HISTORY_2026-06-02.zh.md` | 本时间线和各阶段测试报告 | 本文件记录迭代过程 | 说明从 v0.1/v0.2 到 v0.3、前端闭环、AGT、多链钱包和协作基线的演进 |
-| 15 | 协作开发交接 | `LAEL_COLLABORATION_HANDOFF_2026-06-02.zh.md` | 本文件内验证命令 | 后续协作测试报告 | 给同事说明 GitHub 分支、运行方式、验证命令、钱包边界和协作规则 |
-| 16 | 下一会话交接入口 | `NEXT_SESSION_HANDOFF.md` | `tests/docs.test.ts` / `tests/project-docs.test.ts` | 后续每次重要迭代都应更新本文件 | 根目录固定入口，提供新会话启动提示词、当前状态、验证命令和维护规则 |
+| 14 | Base Sepolia / Mainnet Guard / Endless QR | `LAEL_BASE_SEPOLIA_ACCEPTANCE_REPORT_2026-06-04.zh.md` | `LAEL_TEST_PLAN_v0.3.zh.md` / Project Docs 手工验收章节 | 本文件即验收报告 | 固化 Base Sepolia 手工验收主线；新增 Base Mainnet env + 页面二次确认安全门；新增 Endless QR session / callback / polling 协议 |
+| 15 | June 15 MVP 验收矩阵 | `LAEL_MVP_ACCEPTANCE_MATRIX_2026-06-04.zh.md` | `LAEL_TEST_PLAN_v0.3.zh.md` / real-environment report | 本文件定义后续验收顺序 | 固化 6 月 15 前交付物、验收路径、证据要求、用户协助点和自动化基线 |
+| 16 | Wallet Integration Demo Script | `LAEL_WALLET_INTEGRATION_DEMO_SCRIPT_2026-06-04.zh.md` | `LAEL_MVP_ACCEPTANCE_MATRIX_2026-06-04.zh.md` / real-environment report | 本文件定义演示脚本 | 3-5 分钟固定演示流程，覆盖 Base Sepolia txHash、receipt、feedback/learning、mainnet guard、Endless QR |
+| 17 | Real-environment Test Report | `LAEL_REAL_ENVIRONMENT_TEST_REPORT_2026-06-04.zh.md` | `LAEL_WALLET_INTEGRATION_DEMO_SCRIPT_2026-06-04.zh.md` / `LAEL_TEST_PLAN_v0.3.zh.md` | 本文件即测试报告 | 记录 Base Sepolia 真实 txHash、completed receipt / feedback 截图、BaseScan evidence、mainnet guard、Endless QR protocol-level 截图 |
+| 18 | Internal Technical One-pager | `LAEL_INTERNAL_TECHNICAL_ONE_PAGER_2026-06-06.zh.md` | `LAEL_MVP_ACCEPTANCE_MATRIX_2026-06-04.zh.md` / real-environment report | 本文件即内部技术摘要 | 一页说明 Runtime Fabric 定位、已验证 MVP 能力、证据、安全边界、风险和下一步 |
+| 19 | 本会话开发、验证与测试报告 | `LAEL_SESSION_DEV_VERIFICATION_REPORT_2026-06-09.zh.md` | 本时间线、real-environment report、demo video 工作项 | 本文件即阶段报告 | 记录本会话开发项、手工证据、服务在线状态、验证记录和暂停中的 HyperFrames voiceover refresh |
+| 20 | P0/P1/P2 原生 App / 钱包 / Reward 验证 | `LAEL_P0_P1_P2_NATIVE_APP_REWARD_VERIFICATION_REPORT_2026-06-12.zh.md` | `LAEL_TEST_PLAN_v0.3.zh.md` / Project Docs / real-environment report | 本文件即本轮验证报告 | 记录 `luffa-endless-auth:v1`、signed Luffa App callback / WebView bridge、BNB/Solana/Endless 手工证据要求和 Task Reward 场景 |
+| 20.1 | Luffa App public callback / Cloudflare Tunnel 配置要求 | `docs/README.md` / `NEXT_SESSION_HANDOFF.md` / Project Docs | `LAEL_TEST_PLAN_v0.3.zh.md` / `/v2/runtime-config` | 本轮配置要求固化 | 明确真实 Luffa App QR / WebView 验收必须配置公网 HTTPS `LAEL_PUBLIC_CALLBACK_BASE_URL`；Cloudflare 1033/530、tunnel URL 变化或 API 重启后旧 QR 作废 |
+| 20.2 | Endless Web Wallet 真实 txHash 路径 | `docs/README.md` / `NEXT_SESSION_HANDOFF.md` / Project Docs | `LAEL_TEST_PLAN_v0.3.zh.md` / `tests/frontend-wallet-menu.test.ts` | 本轮调试结论固化 | P0 Luffa App QR 保留原生授权协议；P1/P2 Endless 真实链上 transfer / task_reward 优先走官方 Endless Web Wallet SDK，避免 App bridge `packageTransactionV2` payload 兼容问题阻塞 txHash 验收 |
+| 20.3 | Endless Web Wallet 会话验证 | `LAEL_ENDLESS_WEB_WALLET_SESSION_REPORT_2026-06-15.zh.md` | `LAEL_TEST_PLAN_v0.3.zh.md` / `tests/wallet.test.ts` / frontend manual acceptance | 本文件即阶段报告 | 记录 Web Wallet SDK 集成、address/publicKey 验签修复、Task Reward 0.001 EDS proposal、当前服务状态，以及钱包 Confirm 灰色导致 txHash 未完成的阻塞 |
+| 21 | 项目迭代过程 | `LAEL_PROJECT_ITERATION_HISTORY_2026-06-02.zh.md` | 本时间线和各阶段测试报告 | 本文件记录迭代过程 | 说明从 v0.1/v0.2 到 v0.3、前端闭环、AGT、多链钱包、QR 验收和协作基线的演进 |
+| 22 | 协作开发交接 | `LAEL_COLLABORATION_HANDOFF_2026-06-02.zh.md` | 本文件内验证命令 | 后续协作测试报告 | 给同事说明 GitHub 分支、运行方式、验证命令、钱包边界和协作规则 |
+| 23 | 下一会话交接入口 | `NEXT_SESSION_HANDOFF.md` | `tests/docs.test.ts` / `tests/project-docs.test.ts` | 后续每次重要迭代都应更新本文件 | 根目录固定入口，提供新会话启动提示词、当前状态、验证命令和维护规则 |
 
 ## 3. 文档分组说明
 
@@ -70,6 +88,14 @@
 |---|---|---|
 | `LAEL_TEST_REPORT_v0.3_2026-05-28.zh.md` | v0.3 文档与基础功能落地后第一轮测试 | 覆盖 6 份备案文档、root tests、VARR tests、frontend build、swap proposal、invoice proof settlement 等。 |
 | `LAEL_FRONTEND_LOOP_TEST_REPORT_2026-05-29.zh.md` | 前端闭环与测试面板改进后第二轮测试 | 覆盖 Execution Loop Console、Identity Mapping、Automated Tests、Manual Tests、Evidence、Learning、QA Runner 和浏览器验收。 |
+| `LAEL_BASE_SEPOLIA_ACCEPTANCE_REPORT_2026-06-04.zh.md` | Base Sepolia / Mainnet Guard / Endless QR 验收 | 固化 Base Sepolia 手工验收主线，说明 Base Mainnet 安全门和 Endless QR 协议级验收边界。 |
+| `LAEL_MVP_ACCEPTANCE_MATRIX_2026-06-04.zh.md` | June 15 MVP 验收矩阵 | 定义 Full MVP testing、wallet integration demo、real-environment report、internal one-pager 和 optional video 的完成标准。 |
+| `LAEL_WALLET_INTEGRATION_DEMO_SCRIPT_2026-06-04.zh.md` | Wallet integration demo script | 定义 3-5 分钟演示节奏、操作步骤、讲解口径、风险应对和视频结构草案。 |
+| `LAEL_REAL_ENVIRONMENT_TEST_REPORT_2026-06-04.zh.md` | Real-environment test report | 记录 Base Sepolia 真实环境交易、completed receipt / feedback 截图、BaseScan evidence、mainnet guard 和 Endless QR protocol-level 截图。 |
+| `LAEL_INTERNAL_TECHNICAL_ONE_PAGER_2026-06-06.zh.md` | Internal Technical One-pager | 一页说明 Runtime Fabric 定位、核心闭环、已验证能力、安全边界、风险和下一步。 |
+| `LAEL_SESSION_DEV_VERIFICATION_REPORT_2026-06-09.zh.md` | Session development / verification report | 记录本会话开发、验证、服务在线状态、截图证据、demo video 当前状态和暂停点。 |
+| `LAEL_P0_P1_P2_NATIVE_APP_REWARD_VERIFICATION_REPORT_2026-06-12.zh.md` | P0/P1/P2 native app / wallet / reward verification | 记录 `luffa-endless-auth:v1`、真实 Luffa App signed callback / WebView bridge、BNB/Solana/Endless 手工证据目标和 Task Reward 业务场景。 |
+| `LAEL_ENDLESS_WEB_WALLET_SESSION_REPORT_2026-06-15.zh.md` | Endless Web Wallet session verification | 记录 Endless Web Wallet SDK 路径、wallet binding/publicKey 修复、Task Reward 0.001 EDS proposal、当前服务状态和 Confirm 灰色导致 txHash 未完成的阻塞。 |
 
 > 注意：第二份前端测试报告不替代第一份 v0.3 测试报告。两者分别对应不同阶段，必须同时保留。
 
@@ -155,6 +181,11 @@
 | 前端闭环计划 | `LAEL_FRONTEND_LOOP_IMPROVEMENT_PLAN_2026-05-29.zh.md` |
 | 第二轮测试报告 | `LAEL_FRONTEND_LOOP_TEST_REPORT_2026-05-29.zh.md` |
 | 多链钱包测试报告 | `LAEL_MULTICHAIN_WALLET_SUPPORT_TEST_REPORT_2026-06-02.zh.md` |
+| Base Sepolia / Mainnet Guard / Endless QR 验收 | `LAEL_BASE_SEPOLIA_ACCEPTANCE_REPORT_2026-06-04.zh.md` |
+| June 15 MVP 验收矩阵 | `LAEL_MVP_ACCEPTANCE_MATRIX_2026-06-04.zh.md` |
+| Wallet Integration Demo Script | `LAEL_WALLET_INTEGRATION_DEMO_SCRIPT_2026-06-04.zh.md` |
+| Real-environment Test Report | `LAEL_REAL_ENVIRONMENT_TEST_REPORT_2026-06-04.zh.md` |
+| Internal Technical One-pager | `LAEL_INTERNAL_TECHNICAL_ONE_PAGER_2026-06-06.zh.md` |
 | 项目迭代过程 | `LAEL_PROJECT_ITERATION_HISTORY_2026-06-02.zh.md` |
 | 协作交接 | `LAEL_COLLABORATION_HANDOFF_2026-06-02.zh.md` |
 | 下一会话交接入口 | `../NEXT_SESSION_HANDOFF.md` |
