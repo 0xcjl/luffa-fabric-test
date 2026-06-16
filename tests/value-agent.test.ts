@@ -148,4 +148,40 @@ describe("LAEL on-chain value agent simulated swap", () => {
 
     await app.close();
   });
+
+  it("parses explicit BNB mainnet swap without falling back to BNB testnet", async () => {
+    const { app } = await buildServer({ path: ":memory:" });
+
+    const proposed = await app.inject({
+      method: "POST",
+      url: "/v2/value-agent/swap-proposals",
+      payload: {
+        ownerRef,
+        walletAddress,
+        rawInput: "Swap 0.000001 BNB to USDC on BNB mainnet",
+        policy: {
+          maxAmount: 0.001,
+          allowedAssets: ["BNB", "USDC"],
+          allowedChain: "BNB_MAINNET",
+          maxSlippageBps: 100,
+          requiresHumanConfirmation: true,
+        },
+      },
+    });
+
+    expect(proposed.statusCode).toBe(201);
+    expect(proposed.json()).toMatchObject({
+      parsedIntent: {
+        amount: 0.000001,
+        fromAsset: "BNB",
+        toAsset: "USDC",
+        chainKey: "BNB_MAINNET",
+      },
+      permissionDecision: {
+        status: "allow_pending_human_confirmation",
+      },
+    });
+
+    await app.close();
+  });
 });

@@ -2,7 +2,7 @@
 
 > 目的：把 LAEL / Luffa Fabric v0.3 的需求、MVP、测试方案、实施计划和测试报告按时间先后整理清楚，便于 GitHub 阅读、审查和后续交接。  
 > 当前分支：`codex/varr-api-route-fixes`  
-> 更新范围：文档索引、报告映射、Base Sepolia / Mainnet Guard / Endless QR 验收入口、2026-06-06 真实环境截图证据、2026-06-12 P0/P1/P2 原生 App 授权和 Task Reward 主线、2026-06-15 Endless Web Wallet 真实 txHash 路径调试状态，以及本会话完整测试与未完成项汇总。
+> 更新范围：文档索引、报告映射、Base Sepolia / Mainnet Guard / Endless QR 验收入口、2026-06-06 真实环境截图证据、2026-06-12 P0/P1/P2 原生 App 授权和 Task Reward 主线、2026-06-15 Endless Web Wallet 真实 txHash 路径调试状态、2026-06-16 Luffa App bridge 真实 txHash 修复、P0-P2 综合完成总结，以及全量回归 / 前端稳定性测试。
 
 ## 1. 推荐阅读顺序
 
@@ -28,9 +28,15 @@
 20. `LAEL_SESSION_DEV_VERIFICATION_REPORT_2026-06-09.zh.md`
 21. `LAEL_P0_P1_P2_NATIVE_APP_REWARD_VERIFICATION_REPORT_2026-06-12.zh.md`
 22. `LAEL_ENDLESS_WEB_WALLET_SESSION_REPORT_2026-06-15.zh.md`
-23. `LAEL_SESSION_FULL_TEST_AND_VERIFICATION_REPORT_2026-06-15.zh.md`
-24. `LAEL_PROJECT_ITERATION_HISTORY_2026-06-02.zh.md`
-25. `LAEL_COLLABORATION_HANDOFF_2026-06-02.zh.md`
+23. `LAEL_BNB_MAINNET_SMALL_VALUE_TRANSFER_REPORT_2026-06-15.zh.md`
+24. `LAEL_SOLANA_MAINNET_SMALL_VALUE_TRANSFER_REPORT_2026-06-15.zh.md`
+25. `LAEL_LUFFA_APP_QR_SCHEMA_REQUEST_2026-06-16.zh.md`
+26. `LAEL_LUFFA_APP_ENDLESS_MAINNET_TASK_REWARD_REPORT_2026-06-16.zh.md`
+27. `LAEL_P0_P2_COMPREHENSIVE_TEST_SUMMARY_2026-06-16.zh.md`
+28. `LAEL_FULL_REGRESSION_QA_REPORT_2026-06-16.zh.md`
+29. `LAEL_SESSION_FULL_TEST_AND_VERIFICATION_REPORT_2026-06-15.zh.md`
+30. `LAEL_PROJECT_ITERATION_HISTORY_2026-06-02.zh.md`
+31. `LAEL_COLLABORATION_HANDOFF_2026-06-02.zh.md`
 
 ## 2. 时间线总表
 
@@ -64,6 +70,14 @@
 | 20.6 | Endless Mainnet 0.001 EDS 小额闭环 | `LAEL_ENDLESS_WEB_WALLET_SESSION_REPORT_2026-06-15.zh.md` / `NEXT_SESSION_HANDOFF.md` / Project Docs | `LAEL_TEST_PLAN_v0.3.zh.md` / frontend manual acceptance | 本轮主网风险门、余额预检和真实 txHash 记录 | 用户明确允许主网 EDS 小额测试后，本地 API 以 `LAEL_ENABLE_MAINNET_EXECUTION=true`、`LAEL_MAINNET_MAX_AMOUNT_ETH=0.001` 启动；前端生成 Endless Mainnet Task Reward proposal 并连接 Web Wallet。活动 sender `EYWRWEnLGxgpYVVQd2Tq74iMtHUYSas4qKG3SzrpkZr2` 充值后经 Endless Mainnet SDK 查询余额为 `10 EDS`；用户完成真实钱包确认后返回 txHash `G1eVEi3JxrmPuoEjdXc1hLNuwqB9TscAVQzxo6vG5iid`，receipt `exec_00e02bbd-dc7a-467f-bb1e-4fcb4464e21e`，settlement completed，feedback submitted，learning updated |
 | 20.7 | Endless Mainnet receipt API verification | `NEXT_SESSION_HANDOFF.md` / `LAEL_ENDLESS_WEB_WALLET_SESSION_REPORT_2026-06-15.zh.md` / `tests/settlement-adapters.test.ts` | `/v2/settlement/tx/:txHash` / Endless Mainnet RPC | 本轮链上 receipt 补强 | 修复 settlement tx verification 按 `chainId` 精确选择 adapter，避免 `chainType=endless` 默认落到 testnet；`chainId=220` 查询真实主网 txHash 返回 `status=SUCCESS`、`blockNumber=188036997`、sender、recipient、payload amount 和 `vm_status=Executed successfully` |
 | 20.8 | Luffa App QR parser/schema 阻塞复测 | `NEXT_SESSION_HANDOFF.md` / `LAEL_ENDLESS_WEB_WALLET_SESSION_REPORT_2026-06-15.zh.md` / Project Docs | `npm run health:luffa-app` / QR session debug | 本轮真实手机扫码复测 | API、frontend、Cloudflare public callback 和 health check 均 ready 后，JSON QR、`luffa-endless-auth:v1` 兼容 JSON、`protocol=luffa-endless-auth` key=value 最小 login QR 均被手机 App 提示“无效二维码”；最小 login session 保持 `waiting` 且 debug events 为空，说明阻塞在 App 本地 QR parser/schema，继续扫码前需 App 侧确认实际接受格式 |
+| 20.9 | BNB Mainnet 0.000001 BNB 小额自转闭环 | `LAEL_BNB_MAINNET_SMALL_VALUE_TRANSFER_REPORT_2026-06-15.zh.md` / `NEXT_SESSION_HANDOFF.md` / Project Docs | `tests/mvp2-payment-agent.test.ts` / `tests/value-agent.test.ts` / public BSC RPC receipt | 本轮 BNB 主网真实 txHash 记录 | 用户明确确认 BNB Mainnet 0.000001 BNB 自转；修复 BNB mainnet prompt 被解析为 `BNB_TESTNET` 的问题；完成 txHash `0x0985baaf632a8f8a6c9b474c78dfc71935029d6e6007ddf27e2f7b207acb9736`、public RPC receipt `status=0x1`、LAEL receipt `exec_3a85ba42-f526-4c40-a628-53b52e9460fc`、feedback 和 learning。2026-06-16 用户确认主网测试通过即可，BNB Testnet 不再作为当前验收阻塞项 |
+| 20.10 | Solana Mainnet 0.000001 SOL 小额自转闭环 | `LAEL_SOLANA_MAINNET_SMALL_VALUE_TRANSFER_REPORT_2026-06-15.zh.md` / `NEXT_SESSION_HANDOFF.md` / Project Docs | `tests/settlement-adapters.test.ts` / public Solana RPC receipt | 本轮 Solana 主网真实 signature 记录 | 用户明确确认 Solana Mainnet 0.000001 SOL 自转；完成 signature `4YLEVpKSGd3wCLApqgPsVHx9nCjbG6Cavcb1cqmj23JyXHZi84CwLKFGShpQR84p8BiviwJFFNU5GRx2UyHhqK16`、public RPC `finalized`、slot `426702421`、LAEL receipt `exec_19f2155b-521b-48b6-8816-6b834494835c`、feedback 和 learning；修复 Solana mainnet RPC 和 receipt verification |
+| 20.11 | 主网 receipt 防误记 guard | `NEXT_SESSION_HANDOFF.md` / `docs/README.md` / Project Docs | `tests/mvp2-payment-agent.test.ts` / `tests/frontend-wallet-menu.test.ts` | 本轮主网安全边界补强 | 前端 `Approve & Record` 和后端 `/execute` 现在都会拒绝主网空 txHash 或 `mock_` txHash，避免把 local mock receipt 或 signed-only 状态误记为真实链上完成 |
+| 20.12 | Luffa App QR schema 确认单 | `LAEL_LUFFA_APP_QR_SCHEMA_REQUEST_2026-06-16.zh.md` | `npm run health:luffa-app` / QR session debug | App 侧联调前置材料 | 服务和 public callback 已恢复，QR parser/schema 仍需 App 侧确认；新增确认单列出 App 扫码入口需接受的 QR 内容类型、deep link / universal link 示例、callback body schema 和下一次扫码验收标准 |
+| 20.13 | Luffa App WebView signed authorization / bridge 复测 | `NEXT_SESSION_HANDOFF.md` / `docs/README.md` / Project Docs | `npm run health:luffa-app` / `tests/endless-qr.test.ts` / QR session debug | 本轮 P0 与 bridge 边界固化 | 2026-06-16 使用 HTTPS `/scan` QR 重新跑通 Luffa App login signed authorization：`callbackSource=qr_scan_callback`、`signatureVerified=true`、`approvedWithoutTxHash=true`。Task Reward QR 能进入 WebView bridge，`connect`、`signMessage` 和后端 serialized transaction build 均成功，但 `packageTransactionV2` 对 serialized transaction 仍返回 `1006/rawData=""`，没有 `txHash`；P1/P2 Luffa App 真实链上提交继续归类为 App bridge payload/schema 兼容问题 |
+| 20.14 | Luffa App Endless Mainnet Task Reward 真实闭环 | `LAEL_LUFFA_APP_ENDLESS_MAINNET_TASK_REWARD_REPORT_2026-06-16.zh.md` | Luffa SuperBox bridge docs / `tests/endless-qr.test.ts` / `/v2/settlement/tx` | 本文件即本轮完成报告 | 修复 App bridge 调用顺序为 `packageTransactionV2(payload JSON string) -> rawData -> signAndSubmitTransaction(rawData) -> hash`。真实 Luffa App 扫码返回 Endless Mainnet txHash `D48oBNUHyigrBzpgWRvqyRyGpGNDXnsjKpht9hN9GGNL`，链上验证 `SUCCESS`，LAEL 记录 proposal、execution、settlement、feedback 和 learning，P0/P1/P2 关键闭环完成 |
+| 20.15 | P0-P2 综合测试报告与阶段总结 | `LAEL_P0_P2_COMPREHENSIVE_TEST_SUMMARY_2026-06-16.zh.md` | P0/P1/P2 verification / service health / automated tests | 本文件即综合总结 | 汇总 P0 Luffa App QR / WebView 授权、P1 Endless / BNB / Solana / Base 真实小额钱包闭环、P2 Task Reward 业务闭环、服务状态、自动化验证和非阻塞备注；BNB Testnet / Solana Devnet 已按用户指令由主网小额测试替代，仅保留为可选补证 |
+| 20.16 | 全量回归与前端稳定性测试 | `LAEL_FULL_REGRESSION_QA_REPORT_2026-06-16.zh.md` | QA Runner / frontend CSS smoke / service health | 本文件即回归测试报告 | 修复 QA Runner frontend build 覆盖 live dev server 产物导致 CSS 404 / 裸 HTML 的问题；前端 dev 使用 `.next-live`，build 使用 `.next-build`；QA Runner 隔离 mock 测试环境并新增 stylesheet 200 检查；全自动检查 run `qa_mqg0m76y` 通过 |
 | 21 | 项目迭代过程 | `LAEL_PROJECT_ITERATION_HISTORY_2026-06-02.zh.md` | 本时间线和各阶段测试报告 | 本文件记录迭代过程 | 说明从 v0.1/v0.2 到 v0.3、前端闭环、AGT、多链钱包、QR 验收和协作基线的演进 |
 | 22 | 协作开发交接 | `LAEL_COLLABORATION_HANDOFF_2026-06-02.zh.md` | 本文件内验证命令 | 后续协作测试报告 | 给同事说明 GitHub 分支、运行方式、验证命令、钱包边界和协作规则 |
 | 23 | 下一会话交接入口 | `NEXT_SESSION_HANDOFF.md` | `tests/docs.test.ts` / `tests/project-docs.test.ts` | 后续每次重要迭代都应更新本文件 | 根目录固定入口，提供新会话启动提示词、当前状态、验证命令和维护规则 |
@@ -102,6 +116,12 @@
 | `LAEL_SESSION_DEV_VERIFICATION_REPORT_2026-06-09.zh.md` | Session development / verification report | 记录本会话开发、验证、服务在线状态、截图证据、demo video 当前状态和暂停点。 |
 | `LAEL_P0_P1_P2_NATIVE_APP_REWARD_VERIFICATION_REPORT_2026-06-12.zh.md` | P0/P1/P2 native app / wallet / reward verification | 记录 `luffa-endless-auth:v1`、真实 Luffa App signed callback / WebView bridge、BNB/Solana/Endless 手工证据目标和 Task Reward 业务场景。 |
 | `LAEL_ENDLESS_WEB_WALLET_SESSION_REPORT_2026-06-15.zh.md` | Endless Web Wallet session verification | 记录 Endless Web Wallet SDK 路径、wallet binding/publicKey 修复、Task Reward 0.001 EDS proposal、Endless Mainnet 小额真实 txHash、receipt、feedback 和 learning。 |
+| `LAEL_BNB_MAINNET_SMALL_VALUE_TRANSFER_REPORT_2026-06-15.zh.md` | BNB Mainnet small-value transfer verification | 记录 BNB Mainnet 0.000001 BNB 自转、BNB mainnet 解析修复、真实 txHash、public RPC receipt、LAEL receipt、feedback 和 learning。 |
+| `LAEL_SOLANA_MAINNET_SMALL_VALUE_TRANSFER_REPORT_2026-06-15.zh.md` | Solana Mainnet small-value transfer verification | 记录 Solana Mainnet 0.000001 SOL 自转、Solana mainnet RPC / receipt 修复、真实 signature、public RPC receipt、LAEL receipt、feedback 和 learning。 |
+| `LAEL_LUFFA_APP_QR_SCHEMA_REQUEST_2026-06-16.zh.md` | Luffa App QR schema confirmation request | 汇总 App QR parser/schema 阻塞、当前服务状态、callback contract 和 App 侧需确认的问题。 |
+| `LAEL_LUFFA_APP_ENDLESS_MAINNET_TASK_REWARD_REPORT_2026-06-16.zh.md` | Luffa App Endless Mainnet Task Reward verification | 记录 App bridge 两步交易流程修复、真实 Endless Mainnet txHash、链上 receipt、LAEL execution、feedback 和 learning。 |
+| `LAEL_P0_P2_COMPREHENSIVE_TEST_SUMMARY_2026-06-16.zh.md` | P0-P2 comprehensive test summary | 汇总 P0 Luffa App QR/WebView 授权、P1 真实钱包小额闭环、P2 Task Reward 业务闭环、当前服务状态、自动化验证和非阻塞后续项。 |
+| `LAEL_FULL_REGRESSION_QA_REPORT_2026-06-16.zh.md` | Full regression and frontend stability QA | 记录前端 dev/build 产物隔离、CSS smoke、QA Runner 环境隔离、全自动检查通过、服务健康和非阻塞备注。 |
 | `LAEL_SESSION_FULL_TEST_AND_VERIFICATION_REPORT_2026-06-15.zh.md` | Full session test and verification report | 汇总本会话 P0/P1/P2 手工测试、自动化验证、GitHub 推送结果、服务检查和未完成项；追加记录 Endless Mainnet Web Wallet 真实 txHash 已完成，Luffa App bridge 真实交易仍未完成。 |
 
 > 注意：第二份前端测试报告不替代第一份 v0.3 测试报告。两者分别对应不同阶段，必须同时保留。

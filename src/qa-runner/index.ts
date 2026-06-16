@@ -54,6 +54,11 @@ export function getQaChecks(cwd: string): QaCheckDefinition[] {
   const frontendCwd = join(cwd, "src", "frontend");
   const apiPort = process.env.LAEL_PORT ?? "3000";
   const frontendUrl = process.env.LAEL_FRONTEND_URL ?? "http://127.0.0.1:3001";
+  const testEnv = {
+    LAEL_SETTLEMENT_MODE: "mock",
+    LAEL_ENABLE_MAINNET_EXECUTION: "false",
+    LAEL_PUBLIC_CALLBACK_BASE_URL: "",
+  };
   return [
     {
       id: "root-typecheck",
@@ -70,6 +75,7 @@ export function getQaChecks(cwd: string): QaCheckDefinition[] {
       args: ["run", "--config", "vitest.config.ts"],
       cwd,
       timeoutMs: 180_000,
+      env: testEnv,
     },
     {
       id: "varr-tests",
@@ -78,6 +84,7 @@ export function getQaChecks(cwd: string): QaCheckDefinition[] {
       args: ["--experimental-strip-types", "--test", "varr-mvp1/tests/**/*.test.ts"],
       cwd,
       timeoutMs: 180_000,
+      env: testEnv,
     },
     {
       id: "frontend-build",
@@ -116,7 +123,7 @@ export function getQaChecks(cwd: string): QaCheckDefinition[] {
       command: process.execPath,
       args: [
         "-e",
-        `fetch("${frontendUrl}").then(async r => { if (!r.ok) throw new Error(String(r.status)); const body = await r.text(); if (!body.includes("Execution Loop Console") || !body.includes("Luffa Fabric Execution Loop")) throw new Error("missing app shell"); console.log("Frontend smoke passed"); })`,
+        `fetch("${frontendUrl}").then(async r => { if (!r.ok) throw new Error(String(r.status)); const body = await r.text(); if (body.includes("Application error: a client-side exception")) throw new Error("client exception page"); if (!body.includes("Execution Loop Console") || !body.includes("Luffa Fabric Execution Loop")) throw new Error("missing app shell"); const stylesheets = [...body.matchAll(/<link[^>]+rel=["']stylesheet["'][^>]+href=["']([^"']+)["']/g)].map(m => m[1]); if (stylesheets.length === 0) throw new Error("missing stylesheet"); const base = new URL("${frontendUrl}"); for (const href of stylesheets) { const url = new URL(href, base); const css = await fetch(url); if (!css.ok) throw new Error("stylesheet failed " + css.status + " " + url.pathname); } console.log("Frontend smoke passed"); })`,
       ],
       cwd,
       timeoutMs: 30_000,

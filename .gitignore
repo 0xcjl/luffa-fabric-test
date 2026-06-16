@@ -3,6 +3,8 @@ node_modules/
 dist/
 src/frontend/.next/
 src/frontend/.next-dev/
+src/frontend/.next-build/
+src/frontend/.next-live/
 coverage/
 *.db
 *.db-shm

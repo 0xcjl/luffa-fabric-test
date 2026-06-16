@@ -224,8 +224,13 @@ export class PaymentAgentMvpService {
     if (!input.humanConfirmed) {
       throw new Error("Human confirmation is required");
     }
-    if (getChainConfig(proposal.parsedIntent.chainKey)?.chainType === "endless" && !input.txHash) {
+    const chain = getChainConfig(proposal.parsedIntent.chainKey);
+    const txHash = input.txHash?.trim();
+    if (chain?.chainType === "endless" && !txHash) {
       throw new Error("Endless value execution requires a real txHash from Endless Web Wallet or Luffa App");
+    }
+    if (chain && !chain.testnet && (!txHash || txHash.startsWith("mock_"))) {
+      throw new Error("Mainnet value execution requires a real txHash");
     }
 
     await this.lael.createPolicy({
@@ -720,13 +725,21 @@ function paymentActionTitle(proposal: PaymentProposal): string {
 function parseExplicitChain(rawInput: string): string | undefined {
   const raw = rawInput.toLowerCase();
   if (raw.includes("base sepolia")) return "BASE_SEPOLIA";
+  if (raw.includes("base") && raw.includes("mainnet")) return "BASE_MAINNET";
+  if (
+    (raw.includes("bnb") || raw.includes("bsc") || raw.includes("binance smart chain")) &&
+    raw.includes("mainnet")
+  ) return "BNB_MAINNET";
   if (raw.includes("bnb") || raw.includes("bsc") || raw.includes("binance smart chain")) return "BNB_TESTNET";
   if (raw.includes("endless") || raw.includes("luffa app")) {
     if (raw.includes("mainnet")) return "ENDLESS_MAINNET";
     return "ENDLESS_TESTNET";
   }
   if (raw.includes("polygon")) return "POLYGON_AMOY";
-  if (raw.includes("solana")) return "SOLANA_DEVNET";
+  if (raw.includes("solana")) {
+    if (raw.includes("mainnet")) return "SOLANA_MAINNET";
+    return "SOLANA_DEVNET";
+  }
   if (raw.includes("ethereum")) return "ETHEREUM_SEPOLIA";
   return undefined;
 }

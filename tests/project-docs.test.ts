@@ -64,6 +64,11 @@ describe("frontend Project Docs data", () => {
     expect(content).toContain("businessAction=login");
     expect(content).toContain("登录签名不得夹带转账 intent");
     expect(content).toContain("asset=EDS");
+    expect(content).toContain("P0-P2 Comprehensive Test Summary");
+    expect(content).toContain("P2 Task Reward 业务闭环");
+    expect(content).toContain("Full Regression QA Report");
+    expect(content).toContain(".next-live");
+    expect(content).toContain(".next-build");
   });
 
   it("indexes the key docs and test reports shown in the frontend", () => {
@@ -86,6 +91,9 @@ describe("frontend Project Docs data", () => {
     expect(indexText).toContain("LAEL_INTERNAL_TECHNICAL_ONE_PAGER_2026-06-06.zh.md");
     expect(indexText).toContain("LAEL_P0_P1_P2_NATIVE_APP_REWARD_VERIFICATION_REPORT_2026-06-12.zh.md");
     expect(indexText).toContain("LAEL_ENDLESS_WEB_WALLET_SESSION_REPORT_2026-06-15.zh.md");
+    expect(indexText).toContain("LAEL_LUFFA_APP_ENDLESS_MAINNET_TASK_REWARD_REPORT_2026-06-16.zh.md");
+    expect(indexText).toContain("LAEL_P0_P2_COMPREHENSIVE_TEST_SUMMARY_2026-06-16.zh.md");
+    expect(indexText).toContain("LAEL_FULL_REGRESSION_QA_REPORT_2026-06-16.zh.md");
     expect(indexText).toContain("LAEL_PROJECT_ITERATION_HISTORY_2026-06-02.zh.md");
     expect(indexText).toContain("LAEL_COLLABORATION_HANDOFF_2026-06-02.zh.md");
   });

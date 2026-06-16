@@ -53,7 +53,7 @@ export class SolanaSettlementAdapter implements SettlementAdapter {
     const response = await jsonRpc<{ value: Array<SolanaSignatureStatus | null> }>(
       this.chain.rpcUrl,
       "getSignatureStatuses",
-      [[txHash]],
+      [[txHash], { searchTransactionHistory: true }],
     );
     const status = response.value[0];
     if (!status) {

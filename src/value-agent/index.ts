@@ -161,10 +161,22 @@ function parseSwapIntent(rawInput: string): SwapIntent {
 
 function parseChain(rawInput: string): string {
   const raw = rawInput.toLowerCase();
+  if (raw.includes("base sepolia")) return "BASE_SEPOLIA";
+  if (raw.includes("base") && raw.includes("mainnet")) return "BASE_MAINNET";
+  if (
+    (raw.includes("bnb") || raw.includes("bsc") || raw.includes("binance smart chain")) &&
+    raw.includes("mainnet")
+  ) return "BNB_MAINNET";
   if (raw.includes("bnb") || raw.includes("bsc") || raw.includes("binance smart chain")) return "BNB_TESTNET";
-  if (raw.includes("endless") || raw.includes("luffa app")) return "ENDLESS_TESTNET";
+  if (raw.includes("endless") || raw.includes("luffa app")) {
+    if (raw.includes("mainnet")) return "ENDLESS_MAINNET";
+    return "ENDLESS_TESTNET";
+  }
   if (raw.includes("polygon")) return "POLYGON_AMOY";
-  if (raw.includes("solana")) return "SOLANA_DEVNET";
+  if (raw.includes("solana")) {
+    if (raw.includes("mainnet")) return "SOLANA_MAINNET";
+    return "SOLANA_DEVNET";
+  }
   if (raw.includes("ethereum")) return "ETHEREUM_SEPOLIA";
   return DEFAULT_CHAIN;
 }

@@ -1,6 +1,6 @@
 const nextConfig = {
   reactStrictMode: true,
-  distDir: ".next-dev",
+  distDir: process.env.NEXT_DIST_DIR ?? ".next-live",
   outputFileTracingRoot: new URL("../../", import.meta.url).pathname
 };
 

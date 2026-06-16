@@ -102,6 +102,8 @@ describe("frontend wallet menu", () => {
     expect(executeProposalBody).toContain("Endless Web Wallet tx or signed Luffa App authorization required before recording receipt");
     expect(executeProposalBody).toContain("await createEndlessQrSession(selectedChain, proposal)");
     expect(executeProposalBody).toContain("Real Endless execution requires a real txHash from Endless Web Wallet or Luffa App");
+    expect(executeProposalBody).toContain("Real ${selectedChain.label} receipt requires a real wallet txHash before Approve & Record");
+    expect(executeProposalBody).toContain("isMockTxHash(effectiveTxHash)");
     expect(executeProposalBody).toContain('selectedChain.chainType === "endless" && endlessApproved ? undefined : getMainnetExecutionBlock');
     expect(executeProposalBody).toContain('appAuthorizationStatus: selectedChain.chainType === "endless" ? "approved"');
     expect(page).toContain("matchingSession");

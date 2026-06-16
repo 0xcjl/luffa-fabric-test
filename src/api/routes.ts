@@ -370,7 +370,7 @@ export async function registerRoutes(app: FastifyInstance, lael: LAEL): Promise<
         message: "Local QA runner is disabled",
       });
     }
-    if (!isLocalRequest(request.ip)) {
+    if (!isLocalQaRequest(request)) {
       return reply.code(403).send({
         status: "blocked",
         message: "Local QA runner only accepts localhost requests",
@@ -391,8 +391,22 @@ export async function registerRoutes(app: FastifyInstance, lael: LAEL): Promise<
   });
 }
 
+function isLocalQaRequest(request: { ip: string; headers: Record<string, string | string[] | undefined> }): boolean {
+  if (!isLocalRequest(request.ip)) return false;
+  return !hasForwardedClientHeader(request.headers);
+}
+
 function isLocalRequest(ip: string): boolean {
   return ip === "127.0.0.1" || ip === "::1" || ip === "::ffff:127.0.0.1";
+}
+
+function hasForwardedClientHeader(headers: Record<string, string | string[] | undefined>): boolean {
+  return Boolean(
+    headers["cf-connecting-ip"] ||
+      headers["x-forwarded-for"] ||
+      headers["x-real-ip"] ||
+      headers["true-client-ip"],
+  );
 }
 
 function publicCallbackRuntimeConfig(): {
@@ -699,23 +713,6 @@ function renderEndlessScanPage(session?: EndlessQrSession, error?: string): stri
         return body;
       }
 
-      async function buildSerializedTransaction(senderAddress) {
-        const response = await fetch("/v2/endless/qr-sessions/" + encodeURIComponent(session.sessionId) + "/build-transaction", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ senderAddress }),
-        });
-        const body = await response.json().catch(() => ({}));
-        if (!response.ok) {
-          throw new Error(body.error ?? "Endless transaction build failed");
-        }
-        sendDebug("build_transaction", formatDebug(body));
-        return {
-          serializedTransaction: body.serializedTransaction,
-          senderHexAddress: body.senderHexAddress,
-        };
-      }
-
       function endlessTransferPayload() {
         return {
           payload: {
@@ -725,7 +722,10 @@ function renderEndlessScanPage(session?: EndlessQrSession, error?: string): stri
               String(Math.max(1, Math.round(Number(session.amount || 0) * 1e8))),
             ],
             typeArguments: ["address", "u128"],
+            typeEnum: [],
           },
+          secondarySignerAddresses: [],
+          feePayer: "",
         };
       }
 
@@ -755,28 +755,37 @@ function renderEndlessScanPage(session?: EndlessQrSession, error?: string): stri
             nonce: session.nonce,
           });
           let txHash = "";
-          let transaction = null;
-          let serializedTransactionData = "";
-          let transactionSenderAddress = "";
+          let packagedTransaction = null;
+          let packagedRawData = "";
+          let submittedTransaction = null;
           if (session.businessAction !== "login") {
             if (!isEndlessRuntimeAddress(session.recipientAddress)) {
               throw new Error("Real Endless transaction requires a Luffa / Endless recipient address, not an EVM 0x address.");
             }
+            setStatus("Packaging Endless transaction in Luffa App...");
+            packagedTransaction = await request("packageTransactionV2", {
+              data: JSON.stringify(endlessTransferPayload()),
+            });
+            packagedRawData = pickField(packagedTransaction, ["rawData", "raw_data", "transactionData", "transaction_data"]) ?? "";
+            if (!packagedRawData) {
+              setDebug({ claim, account, signed, endlessTransferPayload: endlessTransferPayload(), packagedTransaction, parsedRawData: null, bridge: lastBridgeDebug });
+              sendDebug("missing_raw_data", formatDebug({ claim, account, signed, endlessTransferPayload: endlessTransferPayload(), packagedTransaction, parsedRawData: null, bridge: lastBridgeDebug }));
+              throw new Error("Luffa App packageTransactionV2 response missing rawData. Raw response is shown below.");
+            }
             setStatus("Submitting Endless transaction in Luffa App...");
-            transaction = await request("packageTransactionV2", {
+            submittedTransaction = await request("signAndSubmitTransaction", {
               serializedTransaction: {
-                data: endlessTransferPayload(),
-                sender: currentAccountAddress,
+                data: packagedRawData,
               },
             });
-            txHash = pickField(transaction, ["hash", "txHash", "tx_hash", "transactionHash", "transaction_hash", "txnHash", "txn_hash", "txId", "txid", "transactionId", "transaction_id", "digest", "id"]) ?? "";
-            setDebug({ claim, account, signed, endlessTransferPayload: endlessTransferPayload(), transactionSenderAddress: currentAccountAddress, transaction, parsedTxHash: txHash || null, bridge: lastBridgeDebug });
+            txHash = pickField(submittedTransaction, ["hash", "txHash", "tx_hash", "transactionHash", "transaction_hash", "txnHash", "txn_hash", "txId", "txid", "transactionId", "transaction_id", "digest", "id"]) ?? "";
+            setDebug({ claim, account, signed, endlessTransferPayload: endlessTransferPayload(), packagedTransaction, packagedRawData, submittedTransaction, parsedTxHash: txHash || null, bridge: lastBridgeDebug });
             if (!txHash) {
-              sendDebug("missing_tx_hash", formatDebug({ claim, account, signed, endlessTransferPayload: endlessTransferPayload(), transactionSenderAddress: currentAccountAddress, transaction, parsedTxHash: null, bridge: lastBridgeDebug }));
+              sendDebug("missing_tx_hash", formatDebug({ claim, account, signed, endlessTransferPayload: endlessTransferPayload(), packagedTransaction, packagedRawData, submittedTransaction, parsedTxHash: null, bridge: lastBridgeDebug }));
               throw new Error("Luffa App transaction response missing txHash. Raw response is shown below.");
             }
           }
-          const debugSnapshot = { claim, account, signed, serializedTransactionData, transactionSenderAddress, transaction };
+          const debugSnapshot = { claim, account, signed, packagedTransaction, packagedRawData, submittedTransaction };
           setDebug(debugSnapshot);
           const publicKey = pickField(signed, ["publicKey", "public_key", "address", "account", "authKey", "auth_key"]) ?? pickField(account, ["publicKey", "public_key", "address", "account", "authKey", "auth_key"]);
           const fullMessage = pickField(signed, ["fullMessage", "full_message", "messageWithPrefix", "message_with_prefix"]) ?? appSigningMessage;

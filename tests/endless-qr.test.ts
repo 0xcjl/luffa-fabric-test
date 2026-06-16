@@ -182,11 +182,13 @@ describe("Endless / Luffa App QR sessions", () => {
     expect(page.body).toContain('addEventListener("click", approve, { once: true })');
     expect(page.body).toContain("Authorization already submitted. Return to LAEL and poll status.");
     expect(page.body).toContain("packageTransactionV2");
-    expect(page.body).toContain("buildSerializedTransaction");
-    expect(page.body).toContain("/build-transaction");
+    expect(page.body).toContain("signAndSubmitTransaction");
+    expect(page.body).toContain("packagedRawData");
+    expect(page.body).toContain("missing_raw_data");
+    expect(page.body).not.toContain("buildSerializedTransaction");
+    expect(page.body).not.toContain("/build-transaction");
     expect(page.body).toContain("endlessTransferPayload");
     expect(page.body).toContain("0x1::endless_account::transfer");
-    expect(page.body).not.toContain("signAndSubmitTransaction");
     expect(page.body).not.toContain('methodName: "packageTransaction"');
     expect(page.body).not.toContain("buildLegacyTransferData");
     expect(page.body).not.toContain('"1_address_address"');

@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useConnection, useWallet as useSolanaWallet } from "@solana/wallet-adapter-react";
+import { useWallet as useSolanaWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
-import { LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction } from "@solana/web3.js";
+import { clusterApiUrl, Connection, LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction } from "@solana/web3.js";
 import type { AccountInfo as EndlessWebAccountInfo } from "@endlesslab/endless-web3-sdk";
 import { encodeFunctionData, parseEther, parseUnits } from "viem";
 import { base, baseSepolia, bsc, bscTestnet } from "wagmi/chains";
@@ -40,6 +40,8 @@ const ENDLESS_TX_OPTIONS = {
 const ENDLESS_BASE_UNITS_PER_EDS = 1e8;
 const ENDLESS_MODAL_CONTAINER_ID = "endless_dapp_modal_container";
 const ENDLESS_MODAL_HIDDEN_CLASS = "endless_dapp_modal_container_hide";
+const SOLANA_DEVNET_ENDPOINT = clusterApiUrl("devnet");
+const SOLANA_MAINNET_ENDPOINT = "https://solana-rpc.publicnode.com";
 type ChainOption = {
   chainKey: "BASE_SEPOLIA" | "BASE_MAINNET" | "BNB_TESTNET" | "BNB_MAINNET" | "SOLANA_DEVNET" | "SOLANA_MAINNET" | "ENDLESS_TESTNET" | "ENDLESS_MAINNET";
   label: string;
@@ -469,7 +471,6 @@ export default function Page() {
   const { switchChain } = useSwitchChain();
   const { signMessageAsync } = useSignMessage();
   const { sendTransactionAsync } = useSendTransaction();
-  const { connection: solanaConnection } = useConnection();
   const solanaWallet = useSolanaWallet();
   const { setVisible: setSolanaWalletModalVisible } = useWalletModal();
 
@@ -766,7 +767,7 @@ export default function Page() {
     if (!runtimeConfig.mainnetExecutionEnabled) {
       return `Mainnet execution available but gated. Set ${runtimeConfig.mainnetEnvVar || MAINNET_EXECUTION_ENV_VAR}=true for an explicit small-value mainnet test.`;
     }
-    if (!mainnetRiskAccepted) {
+    if (!isMainnetRiskConfirmed(mainnetRiskAccepted)) {
       return "Mainnet risk confirmation required before real value execution.";
     }
     if (amount !== undefined && Number.isFinite(amount) && amount > runtimeConfig.mainnetMaxAmountEth) {
@@ -794,6 +795,8 @@ export default function Page() {
     if (selectedChain.chainType === "solana") {
       const connected = await ensureSolanaConnected();
       if (!connected || !solanaWallet.publicKey) return;
+      const connection = new Connection(solanaEndpointForChain(selectedChain), "confirmed");
+      const latestBlockhash = await connection.getLatestBlockhash("confirmed");
       const transaction = new Transaction().add(
         SystemProgram.transfer({
           fromPubkey: solanaWallet.publicKey,
@@ -801,7 +804,14 @@ export default function Page() {
           lamports: Math.max(1, Math.round(proposal.parsedIntent.amount * LAMPORTS_PER_SOL)),
         }),
       );
-      const signature = await solanaWallet.sendTransaction(transaction, solanaConnection);
+      transaction.feePayer = solanaWallet.publicKey;
+      transaction.recentBlockhash = latestBlockhash.blockhash;
+      const signature = await solanaWallet.sendTransaction(transaction, connection);
+      const confirmation = await connection.confirmTransaction({ signature, ...latestBlockhash }, "confirmed");
+      if (confirmation.value.err) {
+        setLog((items) => [`Solana transaction failed: ${JSON.stringify(confirmation.value.err)}`, ...items].slice(0, 12));
+        return;
+      }
       setTxHash(signature);
       return;
     }
@@ -849,6 +859,10 @@ export default function Page() {
       setEndlessStatus("Real Endless execution requires a real txHash from Endless Web Wallet or Luffa App");
       setLog((items) => ["No real Endless txHash is available yet; use Sign Endless Web Wallet Tx or retry Luffa App after transaction submission is available", ...items].slice(0, 12));
       setEndlessQrModalOpen(true);
+      return;
+    }
+    if (selectedChain.networkKind === "mainnet" && (!effectiveTxHash || isMockTxHash(effectiveTxHash))) {
+      setLog((items) => [`Real ${selectedChain.label} receipt requires a real wallet txHash before Approve & Record`, ...items].slice(0, 12));
       return;
     }
     const mainnetBlock = selectedChain.chainType === "endless" && endlessApproved ? undefined : getMainnetExecutionBlock(proposal.parsedIntent.amount);
@@ -2104,14 +2118,14 @@ function OnchainPanel(props: {
         </dl>
         {props.selectedChain.networkKind === "mainnet" ? (
           <div className="rounded-md border border-alert bg-red-50 p-3 text-sm">
-            <div className="font-black">{props.selectedChain.chainType === "endless" ? "Endless Mainnet real-value guard" : "Base Mainnet small-value transfer guard"}</div>
+            <div className="font-black">{props.selectedChain.chainType === "endless" ? "Endless Mainnet real-value guard" : `${props.selectedChain.label} real-value guard`}</div>
             <p className="mt-1 text-xs text-slate-700">
               {props.selectedChain.chainType === "endless"
                 ? `${props.runtimeConfig.mainnetEnvVar || MAINNET_EXECUTION_ENV_VAR}=${String(props.runtimeConfig.mainnetExecutionEnabled)}; Endless Mainnet can execute real value only after Endless Web Wallet or Luffa App authorization, explicit risk confirmation, and a returned txHash.`
-                : `${props.runtimeConfig.mainnetEnvVar || MAINNET_EXECUTION_ENV_VAR}=${String(props.runtimeConfig.mainnetExecutionEnabled)}; cap ${props.runtimeConfig.mainnetMaxAmountEth}. Base Mainnet real execution requires this env gate and mainnetRiskAccepted confirmation.`}
+                : `${props.runtimeConfig.mainnetEnvVar || MAINNET_EXECUTION_ENV_VAR}=${String(props.runtimeConfig.mainnetExecutionEnabled)}; cap ${props.runtimeConfig.mainnetMaxAmountEth}. ${props.selectedChain.label} real execution requires this env gate and mainnetRiskAccepted confirmation.`}
             </p>
             <label className="mt-2 flex items-start gap-2 text-xs font-bold">
-              <input type="checkbox" checked={props.mainnetRiskAccepted} onChange={(event) => props.setMainnetRiskAccepted(event.target.checked)} />
+              <input type="checkbox" data-mainnet-risk-checkbox="true" checked={props.mainnetRiskAccepted} onChange={(event) => props.setMainnetRiskAccepted(event.target.checked)} />
               I understand this is a real mainnet value test and accept one explicit small-value execution only.
             </label>
           </div>
@@ -2600,6 +2614,16 @@ function executionModeForChain(chain: ChainOption, txHash: string, endlessSource
   if (chain.chainType === "endless") return txHash ? (endlessSource === "endless_web_wallet" ? "real" : "app-authorized") : "sdk-ready";
   if (chain.chainType === "solana") return txHash ? "real" : "simulated";
   return txHash ? "real" : undefined;
+}
+
+function solanaEndpointForChain(chain: ChainOption): string {
+  return chain.chainKey === "SOLANA_MAINNET" ? SOLANA_MAINNET_ENDPOINT : SOLANA_DEVNET_ENDPOINT;
+}
+
+function isMainnetRiskConfirmed(stateValue: boolean): boolean {
+  if (stateValue) return true;
+  if (typeof document === "undefined") return false;
+  return Boolean((document.querySelector("[data-mainnet-risk-checkbox='true']") as HTMLInputElement | null)?.checked);
 }
 
 function isMockTxHash(txHash: string): boolean {

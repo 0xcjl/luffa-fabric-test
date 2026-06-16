@@ -221,6 +221,99 @@ describe("LuffaFabric External MVP v0.2 payment agent loop", () => {
     await app.close();
   });
 
+  it("parses explicit BNB mainnet transfer without falling back to BNB testnet", async () => {
+    const { app } = await buildServer({ path: ":memory:" });
+
+    const proposed = await app.inject({
+      method: "POST",
+      url: "/v2/payment-agent/proposals",
+      payload: {
+        ...proposalPayload("Transfer 0.000001 BNB to Alice on BNB Mainnet", 0.000001),
+        defaultAsset: "BNB",
+        policy: {
+          maxAmount: 0.000001,
+          maxDailyAmount: 0.000005,
+          allowedRecipientNames: ["Alice"],
+          allowedAssets: ["BNB"],
+          allowedChain: "BNB_MAINNET",
+          requiresHumanConfirmation: true,
+        },
+      },
+    });
+
+    expect(proposed.statusCode).toBe(201);
+    expect(proposed.json()).toMatchObject({
+      parsedIntent: {
+        amount: 0.000001,
+        asset: "BNB",
+        recipientName: "Alice",
+        recipientAddress: aliceAddress,
+        chainKey: "BNB_MAINNET",
+      },
+      permissionDecision: {
+        status: "allow_pending_human_confirmation",
+      },
+    });
+
+    await app.close();
+  });
+
+  it("rejects mainnet execution records without a real txHash", async () => {
+    const { app } = await buildServer({ path: ":memory:" });
+
+    const proposed = await app.inject({
+      method: "POST",
+      url: "/v2/payment-agent/proposals",
+      payload: {
+        ...proposalPayload("Transfer 0.000001 BNB to Alice on BNB Mainnet", 0.000001),
+        defaultAsset: "BNB",
+        policy: {
+          maxAmount: 0.000001,
+          maxDailyAmount: 0.000005,
+          allowedRecipientNames: ["Alice"],
+          allowedAssets: ["BNB"],
+          allowedChain: "BNB_MAINNET",
+          requiresHumanConfirmation: true,
+        },
+      },
+    });
+    expect(proposed.statusCode).toBe(201);
+    const proposal = proposed.json() as { proposalId: string };
+
+    const missingTxHash = await app.inject({
+      method: "POST",
+      url: `/v2/payment-agent/proposals/${proposal.proposalId}/execute`,
+      payload: {
+        humanConfirmed: true,
+        walletType: "okx",
+        executionMode: "mock",
+        appAuthorizationStatus: "approved",
+      },
+    });
+    expect(missingTxHash.statusCode).toBe(400);
+    expect(missingTxHash.json()).toMatchObject({
+      error: "Mainnet value execution requires a real txHash",
+    });
+
+    const mockTxHash = await app.inject({
+      method: "POST",
+      url: `/v2/payment-agent/proposals/${proposal.proposalId}/execute`,
+      payload: {
+        humanConfirmed: true,
+        walletType: "okx",
+        txHash: "mock_bnb_mainnet",
+        executionMode: "mock",
+        appAuthorizationStatus: "approved",
+      },
+    });
+    expect(mockTxHash.statusCode).toBe(400);
+    expect(mockTxHash.json()).toMatchObject({
+      error: "Mainnet value execution requires a real txHash",
+    });
+
+    await app.close();
+  });
+
   it("blocks incomplete proposal input instead of returning 500 when recipients are missing", async () => {
     const { app } = await buildServer({ path: ":memory:" });
     const response = await app.inject({

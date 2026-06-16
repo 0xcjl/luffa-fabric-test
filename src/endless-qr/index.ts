@@ -54,6 +54,13 @@ export interface EndlessAuthorizationClaim {
   expiresAt: string;
 }
 
+export interface EndlessQrTargets {
+  scanUrl: string;
+  deepLinkUrl: string;
+  compactJson: string;
+  keyValue: string;
+}
+
 export interface EndlessQrSession {
   version: "v1";
   sessionId: string;
@@ -69,6 +76,7 @@ export interface EndlessQrSession {
   callbackUrl: string;
   callbackLocalOnly: boolean;
   scanUrl: string;
+  qrTargets: EndlessQrTargets;
   signingMessage: string;
   status: EndlessQrStatus;
   qrPayload: {
@@ -87,6 +95,7 @@ export interface EndlessQrSession {
     callbackUrl: string;
     callbackLocalOnly: boolean;
     scanUrl: string;
+    qrTargets: EndlessQrTargets;
     signingMessage: string;
   };
   authorizationReceipt?: EndlessAuthorizationReceipt;
@@ -124,13 +133,16 @@ export class EndlessQrSessionService {
       scanUrl,
     };
     const signingMessage = createEndlessAuthorizationMessage(baseSession);
+    const qrTargets = buildQrTargets(baseSession, signingMessage);
     const session: EndlessQrSession = {
       ...baseSession,
+      qrTargets,
       signingMessage,
       status: "waiting",
       qrPayload: {
         protocol: "luffa-endless-auth",
         ...baseSession,
+        qrTargets,
         signingMessage,
       },
       createdAt: now,
@@ -371,6 +383,68 @@ function buildSessionUrls(sessionId: string): { callbackUrl: string; callbackLoc
     callbackUrl: `${normalizedBaseUrl}${callbackPath}`,
     callbackLocalOnly: false,
     scanUrl: `${normalizedBaseUrl}${scanPath}`,
+  };
+}
+
+function buildQrTargets(input: {
+  version: "v1";
+  sessionId: string;
+  ownerRef: string;
+  chainKey: string;
+  businessAction: EndlessBusinessAction;
+  intent: string;
+  amount: number;
+  asset: string;
+  recipientAddress: string;
+  nonce: string;
+  expiresAt: string;
+  callbackUrl: string;
+  callbackLocalOnly: boolean;
+  scanUrl: string;
+}, signingMessage: string): EndlessQrTargets {
+  const compactPayload = {
+    protocol: "luffa-endless-auth",
+    version: input.version,
+    sessionId: input.sessionId,
+    nonce: input.nonce,
+    chainKey: input.chainKey,
+    businessAction: input.businessAction,
+    amount: input.amount,
+    asset: input.asset,
+    recipientAddress: input.recipientAddress,
+    callbackUrl: input.callbackUrl,
+    scanUrl: input.scanUrl,
+  };
+  const params = new URLSearchParams({
+    protocol: "luffa-endless-auth",
+    version: input.version,
+    sessionId: input.sessionId,
+    nonce: input.nonce,
+    chainKey: input.chainKey,
+    businessAction: input.businessAction,
+    callbackUrl: input.callbackUrl,
+    scanUrl: input.scanUrl,
+  });
+  if (input.businessAction !== "login") {
+    params.set("amount", String(input.amount));
+    params.set("asset", input.asset);
+    params.set("recipientAddress", input.recipientAddress);
+  }
+  return {
+    scanUrl: input.scanUrl,
+    deepLinkUrl: `luffa://endless-auth?${params.toString()}`,
+    compactJson: stableJson(compactPayload),
+    keyValue: [
+      "protocol=luffa-endless-auth",
+      `version=${input.version}`,
+      `sessionId=${input.sessionId}`,
+      `nonce=${input.nonce}`,
+      `chainKey=${input.chainKey}`,
+      `businessAction=${input.businessAction}`,
+      `callbackUrl=${input.callbackUrl}`,
+      `scanUrl=${input.scanUrl}`,
+      `signingMessage=${signingMessage}`,
+    ].join("\n"),
   };
 }
 
