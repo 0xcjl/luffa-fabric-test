@@ -37,11 +37,14 @@ const ENDLESS_TX_OPTIONS = {
   gasUnitPrice: 100,
   expireTimestamp: () => Math.floor(Date.now() / 1000 + 120),
 };
+const ENDLESS_WALLET_RESPONSE_TIMEOUT_MS = 30000;
 const ENDLESS_BASE_UNITS_PER_EDS = 1e8;
 const ENDLESS_MODAL_CONTAINER_ID = "endless_dapp_modal_container";
 const ENDLESS_MODAL_HIDDEN_CLASS = "endless_dapp_modal_container_hide";
 const SOLANA_DEVNET_ENDPOINT = clusterApiUrl("devnet");
-const SOLANA_MAINNET_ENDPOINT = "https://solana-rpc.publicnode.com";
+const SOLANA_MAINNET_ENDPOINT = "https://api.mainnet-beta.solana.com";
+const SOLANA_MAINNET_FALLBACK_ENDPOINT = "https://solana-rpc.publicnode.com";
+const SOLANA_FEE_FALLBACK_LAMPORTS = 100000;
 type ChainOption = {
   chainKey: "BASE_SEPOLIA" | "BASE_MAINNET" | "BNB_TESTNET" | "BNB_MAINNET" | "SOLANA_DEVNET" | "SOLANA_MAINNET" | "ENDLESS_TESTNET" | "ENDLESS_MAINNET";
   label: string;
@@ -135,7 +138,7 @@ const CHAIN_OPTIONS: ChainOption[] = [
     walletRuntime: "Phantom / Solana Wallet",
     defaultAsset: "SOL",
     defaultRecipient: ALICE_SOLANA_ADDRESS,
-    defaultPrompt: "Prepare a SOL transfer proposal to Alice on Solana mainnet",
+    defaultPrompt: "Prepare a 0.000001 SOL transfer proposal to Alice on Solana mainnet",
     swapPrompt: "Prepare a simulated swap proposal: SOL to USDC on Solana mainnet",
     explorer: "https://explorer.solana.com",
     executionEnabled: false,
@@ -795,24 +798,62 @@ export default function Page() {
     if (selectedChain.chainType === "solana") {
       const connected = await ensureSolanaConnected();
       if (!connected || !solanaWallet.publicKey) return;
-      const connection = new Connection(solanaEndpointForChain(selectedChain), "confirmed");
-      const latestBlockhash = await connection.getLatestBlockhash("confirmed");
-      const transaction = new Transaction().add(
-        SystemProgram.transfer({
-          fromPubkey: solanaWallet.publicKey,
-          toPubkey: new PublicKey(proposal.parsedIntent.recipientAddress),
-          lamports: Math.max(1, Math.round(proposal.parsedIntent.amount * LAMPORTS_PER_SOL)),
-        }),
-      );
-      transaction.feePayer = solanaWallet.publicKey;
-      transaction.recentBlockhash = latestBlockhash.blockhash;
-      const signature = await solanaWallet.sendTransaction(transaction, connection);
-      const confirmation = await connection.confirmTransaction({ signature, ...latestBlockhash }, "confirmed");
-      if (confirmation.value.err) {
-        setLog((items) => [`Solana transaction failed: ${JSON.stringify(confirmation.value.err)}`, ...items].slice(0, 12));
+      try {
+        const rpcErrors: string[] = [];
+        let rpcContext: { connection: Connection; endpoint: string; latestBlockhash: Awaited<ReturnType<Connection["getLatestBlockhash"]>> } | undefined;
+        for (const endpoint of solanaEndpointsForChain(selectedChain)) {
+          try {
+            const connection = new Connection(endpoint, "confirmed");
+            const latestBlockhash = await connection.getLatestBlockhash("confirmed");
+            rpcContext = { connection, endpoint, latestBlockhash };
+            break;
+          } catch (error) {
+            rpcErrors.push(`${endpoint}: ${messageFromError(error)}`);
+          }
+        }
+        if (!rpcContext) {
+          setLog((items) => [`Solana RPC unavailable for ${selectedChain.label}: ${rpcErrors.join(" | ")}`, ...items].slice(0, 12));
+          return;
+        }
+        const { connection, endpoint, latestBlockhash } = rpcContext;
+        const lamports = Math.max(1, Math.round(proposal.parsedIntent.amount * LAMPORTS_PER_SOL));
+        const transaction = new Transaction().add(
+          SystemProgram.transfer({
+            fromPubkey: solanaWallet.publicKey,
+            toPubkey: new PublicKey(proposal.parsedIntent.recipientAddress),
+            lamports,
+          }),
+        );
+        transaction.feePayer = solanaWallet.publicKey;
+        transaction.recentBlockhash = latestBlockhash.blockhash;
+        const [balanceLamports, feeForMessage] = await Promise.all([
+          connection.getBalance(solanaWallet.publicKey, "confirmed"),
+          connection.getFeeForMessage(transaction.compileMessage(), "confirmed"),
+        ]);
+        const feeLamports = feeForMessage.value ?? SOLANA_FEE_FALLBACK_LAMPORTS;
+        const requiredLamports = lamports + feeLamports;
+        if (balanceLamports < requiredLamports) {
+          const balanceMessage = `Insufficient Solana ${selectedChain.networkKind} balance: sender=${solanaWallet.publicKey.toBase58()} balance=${formatSol(balanceLamports)} SOL required>=${formatSol(requiredLamports)} SOL amount=${formatSol(lamports)} SOL feeBudget=${formatSol(feeLamports)} SOL`;
+          setLog((items) => [balanceMessage, ...items].slice(0, 12));
+          return;
+        }
+        setLog((items) =>
+          [
+            `Solana tx payload: endpoint=${endpoint} sender=${solanaWallet.publicKey?.toBase58()} recipient=${proposal.parsedIntent.recipientAddress} lamports=${lamports} balance=${formatSol(balanceLamports)} SOL estimatedFee=${formatSol(feeLamports)} SOL`,
+            ...items,
+          ].slice(0, 12),
+        );
+        const signature = await solanaWallet.sendTransaction(transaction, connection);
+        const confirmation = await connection.confirmTransaction({ signature, ...latestBlockhash }, "confirmed");
+        if (confirmation.value.err) {
+          setLog((items) => [`Solana transaction failed: ${JSON.stringify(confirmation.value.err)}`, ...items].slice(0, 12));
+          return;
+        }
+        setTxHash(signature);
+      } catch (error) {
+        setLog((items) => [`Solana transaction request failed: ${messageFromError(error)}`, ...items].slice(0, 12));
         return;
       }
-      setTxHash(signature);
       return;
     }
 
@@ -1217,6 +1258,8 @@ export default function Page() {
       setEndlessAuthStatus("unavailable");
       setEndlessStatus(`Endless Web Wallet connection failed: ${message}`);
       setLog((items) => [`Endless Web Wallet connection failed: ${message}`, ...items].slice(0, 12));
+    } finally {
+      hideEndlessWebWalletModal();
     }
   }
 
@@ -1380,7 +1423,11 @@ export default function Page() {
       const sdk = new EndlessJsSdk({ network, colorMode: "light" });
       sdk.open();
       forceEndlessWebWalletModalVisible();
-      const accountResult = endlessAccount ? await sdk.getAccount() : await sdk.connect();
+      const accountResult = await withTimeout(
+        endlessAccount ? sdk.getAccount() : sdk.connect(),
+        ENDLESS_WALLET_RESPONSE_TIMEOUT_MS,
+        "Endless Web Wallet account request timed out",
+      );
       if (accountResult.status !== UserResponseStatus.APPROVED) {
         setEndlessAuthStatus("rejected");
         setEndlessStatus("Endless Web Wallet account access rejected");
@@ -1420,17 +1467,22 @@ export default function Page() {
         ].slice(0, 12),
       );
       forceEndlessWebWalletModalVisible();
-      const response = await sdk.signAndSubmitTransaction({
-        payload: {
-          function: "0x1::endless_account::transfer",
-          functionArguments: [AccountAddress.fromBs58String(recipient), amountUnits],
-          abi: {
-            typeParameters: [],
-            parameters: [new TypeTagAddress(), new TypeTagU128()],
+      setEndlessStatus("Endless Web Wallet transaction confirmation requested");
+      const response = await withTimeout(
+        sdk.signAndSubmitTransaction({
+          payload: {
+            function: "0x1::endless_account::transfer",
+            functionArguments: [recipient, amountUnits.toString()],
+            abi: {
+              typeParameters: [],
+              parameters: [new TypeTagAddress(), new TypeTagU128()],
+            },
           },
-        },
-        options,
-      });
+          options,
+        }),
+        ENDLESS_WALLET_RESPONSE_TIMEOUT_MS,
+        "Endless Web Wallet transaction confirmation timed out",
+      );
       if (response.status !== UserResponseStatus.APPROVED) {
         setEndlessAuthStatus("rejected");
         setEndlessStatus("Endless Web Wallet transaction rejected");
@@ -1453,6 +1505,8 @@ export default function Page() {
       setEndlessStatus(`Endless Web Wallet transaction failed: ${message}`);
       setLog((items) => [`Endless Web Wallet transaction failed: ${message}`, ...items].slice(0, 12));
       return undefined;
+    } finally {
+      hideEndlessWebWalletModal();
     }
   }
 
@@ -2043,9 +2097,16 @@ function OnchainPanel(props: {
         ? Boolean(props.endlessAccount)
         : props.isConnected;
   const isEndlessLane = props.selectedChain.chainType === "endless";
+  const mainnetSignBlock =
+    props.selectedChain.networkKind === "mainnet" && props.runtimeConfig.mainnetExecutionEnabled && !props.mainnetRiskAccepted
+      ? "Mainnet risk confirmation required before wallet signing."
+      : props.selectedChain.networkKind === "mainnet" && !props.runtimeConfig.mainnetExecutionEnabled
+        ? `Set ${props.runtimeConfig.mainnetEnvVar || MAINNET_EXECUTION_ENV_VAR}=true before wallet signing.`
+        : undefined;
   const proposalActionDisabled =
     props.proposal?.permissionDecision.status === "blocked" ||
     (!isEndlessLane && !walletConnected) ||
+    Boolean(mainnetSignBlock) ||
     (props.selectedToken.kind === "erc20" && !props.tokenAddress);
   return (
     <section className="grid gap-4 lg:grid-cols-[380px_minmax(0,1fr)]">
@@ -2236,6 +2297,7 @@ function OnchainPanel(props: {
                   txHash
                   <input className="rounded-md border border-grid px-3 py-2" value={props.txHash} onChange={(event) => props.setTxHash(event.target.value)} />
                 </label>
+                {mainnetSignBlock ? <p className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-black text-amber-800">{mainnetSignBlock}</p> : null}
                 <div className="grid gap-2 md:grid-cols-3">
                   <button className="rounded-md bg-chain px-4 py-2 text-sm font-black text-white disabled:opacity-40" disabled={proposalActionDisabled} onClick={props.signWalletTransaction}>
                     {isEndlessLane ? "Sign Endless Web Wallet Tx" : "Sign Wallet Tx"}
@@ -2563,9 +2625,20 @@ function effectiveRecipientAddressForChain(chain: ChainOption, candidate: string
 
 function taskRewardPrompt(chain: ChainOption): string {
   if (chain.chainType === "endless") return `Agent complete a small task and reward 0.001 EDS to Alice with Endless Web Wallet on Endless ${chain.networkKind}`;
-  if (chain.chainType === "solana") return `Agent complete a small task and reward 0.01 SOL to Alice on Solana ${chain.networkKind}`;
+  if (chain.chainType === "solana") {
+    const amount = chain.networkKind === "mainnet" ? "0.000001" : "0.01";
+    return `Agent complete a small task and reward ${amount} SOL to Alice on Solana ${chain.networkKind}`;
+  }
   if (chain.chainKey.startsWith("BNB")) return `Agent complete a small task and reward 0.001 BNB to Alice on BNB ${chain.networkKind}`;
   return `Agent complete a small task and reward 0.0001 ETH to Alice on Base ${chain.networkKind === "mainnet" ? "mainnet" : "Sepolia"}`;
+}
+
+function formatSol(lamports: number): string {
+  return (lamports / LAMPORTS_PER_SOL).toFixed(9).replace(/0+$/, "").replace(/\.$/, "");
+}
+
+function messageFromError(error: unknown): string {
+  return error instanceof Error ? error.message : "unknown error";
 }
 
 function businessActionForInput(input: string): "transfer" | "task_reward" {
@@ -2616,8 +2689,8 @@ function executionModeForChain(chain: ChainOption, txHash: string, endlessSource
   return txHash ? "real" : undefined;
 }
 
-function solanaEndpointForChain(chain: ChainOption): string {
-  return chain.chainKey === "SOLANA_MAINNET" ? SOLANA_MAINNET_ENDPOINT : SOLANA_DEVNET_ENDPOINT;
+function solanaEndpointsForChain(chain: ChainOption): string[] {
+  return chain.chainKey === "SOLANA_MAINNET" ? [SOLANA_MAINNET_ENDPOINT, SOLANA_MAINNET_FALLBACK_ENDPOINT] : [SOLANA_DEVNET_ENDPOINT];
 }
 
 function isMainnetRiskConfirmed(stateValue: boolean): boolean {
@@ -2666,14 +2739,24 @@ function normalizeSignatureValue(value: unknown): string | undefined {
   return undefined;
 }
 
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timeout = window.setTimeout(() => reject(new Error(message)), timeoutMs);
+    promise
+      .then((value) => resolve(value))
+      .catch((error) => reject(error))
+      .finally(() => window.clearTimeout(timeout));
+  });
+}
+
 function forceEndlessWebWalletModalVisible() {
   if (typeof window === "undefined") return;
   const reveal = () => {
     const modal = document.getElementById(ENDLESS_MODAL_CONTAINER_ID);
     if (!modal) return;
+    modal.style.removeProperty("display");
     modal.classList.remove(ENDLESS_MODAL_HIDDEN_CLASS);
     Object.assign(modal.style, {
-      display: "flex",
       left: "16px",
       right: "auto",
       top: "16px",
@@ -2685,6 +2768,14 @@ function forceEndlessWebWalletModalVisible() {
   reveal();
   window.setTimeout(reveal, 300);
   window.setTimeout(reveal, 1000);
+}
+
+function hideEndlessWebWalletModal() {
+  if (typeof document === "undefined") return;
+  const modal = document.getElementById(ENDLESS_MODAL_CONTAINER_ID);
+  if (!modal) return;
+  modal.style.removeProperty("display");
+  modal.classList.add(ENDLESS_MODAL_HIDDEN_CLASS);
 }
 
 function normalizeRejectedResponse(value: unknown): Record<string, unknown> {

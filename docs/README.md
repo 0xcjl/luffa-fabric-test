@@ -95,6 +95,12 @@ Solana Mainnet real value execution remains gated by `LAEL_ENABLE_MAINNET_EXECUT
 
 This run also fixed Solana Mainnet RPC selection and receipt verification. See `LAEL_SOLANA_MAINNET_SMALL_VALUE_TRANSFER_REPORT_2026-06-15.zh.md`.
 
+June 16 wallet stability follow-up: the frontend now preflights Solana balance and estimated fee before opening Phantom, keeps Solana Mainnet proposals at `0.000001 SOL`, retries Solana Mainnet RPC endpoints, and logs RPC / transaction preparation errors instead of showing the Next.js Runtime Error overlay. The same follow-up fixes Endless Web Wallet modal close behavior and adds transaction confirmation timeouts. See `LAEL_WALLET_STABILITY_FIX_REPORT_2026-06-16.zh.md`.
+
+## Current Public Callback Caveat
+
+As of the June 16 wallet stability check, local API and frontend are online, but `https://lael.clawworld.eu.cc` returns Cloudflare `1033 / 530` because the local TUN / DNS path resolves Cloudflare tunnel edge hosts to `198.18.*` and `cloudflared` cannot complete the TLS handshake. Local wallet tests can continue, but Luffa App QR / WebView scans should wait until `npm run health:luffa-app` returns `ok=true`.
+
 ## Recommended Reading Order
 
 1. [Next Session Handoff](../NEXT_SESSION_HANDOFF.md)
@@ -125,9 +131,10 @@ This run also fixed Solana Mainnet RPC selection and receipt verification. See `
 26. [Luffa App Endless Mainnet Task Reward Report](./LAEL_LUFFA_APP_ENDLESS_MAINNET_TASK_REWARD_REPORT_2026-06-16.zh.md)
 27. [P0-P2 综合测试报告与阶段总结](./LAEL_P0_P2_COMPREHENSIVE_TEST_SUMMARY_2026-06-16.zh.md)
 28. [全量回归与前端稳定性测试报告](./LAEL_FULL_REGRESSION_QA_REPORT_2026-06-16.zh.md)
-29. [本会话完整测试与验证报告](./LAEL_SESSION_FULL_TEST_AND_VERIFICATION_REPORT_2026-06-15.zh.md)
-30. [项目迭代过程记录](./LAEL_PROJECT_ITERATION_HISTORY_2026-06-02.zh.md)
-31. [协作开发交接说明](./LAEL_COLLABORATION_HANDOFF_2026-06-02.zh.md)
+29. [钱包交互稳定性修复报告](./LAEL_WALLET_STABILITY_FIX_REPORT_2026-06-16.zh.md)
+30. [本会话完整测试与验证报告](./LAEL_SESSION_FULL_TEST_AND_VERIFICATION_REPORT_2026-06-15.zh.md)
+31. [项目迭代过程记录](./LAEL_PROJECT_ITERATION_HISTORY_2026-06-02.zh.md)
+32. [协作开发交接说明](./LAEL_COLLABORATION_HANDOFF_2026-06-02.zh.md)
 
 ## Report Mapping
 
@@ -154,6 +161,7 @@ This run also fixed Solana Mainnet RPC selection and receipt verification. See `
 | `LAEL_LUFFA_APP_ENDLESS_MAINNET_TASK_REWARD_REPORT_2026-06-16.zh.md` | Luffa App Endless Mainnet Task Reward verification | Records the App bridge two-step transaction fix, real Endless Mainnet txHash, chain receipt, LAEL execution, feedback, and learning |
 | `LAEL_P0_P2_COMPREHENSIVE_TEST_SUMMARY_2026-06-16.zh.md` | P0-P2 comprehensive test summary | Consolidates P0 Luffa App QR/WebView authorization, P1 real small-value wallet loops, P2 Task Reward business flow, service status, automated verification, and non-blocking follow-up notes |
 | `LAEL_FULL_REGRESSION_QA_REPORT_2026-06-16.zh.md` | Full regression and frontend stability QA | Records the Next.js dev/build output isolation fix, CSS smoke check, QA Runner environment isolation, full automated check pass, service health, and remaining non-blocking notes |
+| `LAEL_WALLET_STABILITY_FIX_REPORT_2026-06-16.zh.md` | Wallet interaction stability follow-up | Records Endless Web Wallet modal / timeout fixes, Solana balance and fee preflight, Solana RPC fallback, Runtime Error prevention, and current Cloudflare public callback caveat |
 | `LAEL_SESSION_FULL_TEST_AND_VERIFICATION_REPORT_2026-06-15.zh.md` | Full session test and verification report | Consolidates this session's P0/P1/P2 manual tests, automated validation, GitHub publishing result, service checks, and unfinished items including the Endless Web Wallet txHash blocker |
 | `LAEL_PROJECT_ITERATION_HISTORY_2026-06-02.zh.md` | Project iteration history | v0.1/v0.2 to v0.3, frontend loop, AGT, multi-chain wallet, collaboration baseline |
 | `LAEL_COLLABORATION_HANDOFF_2026-06-02.zh.md` | Collaboration handoff | GitHub branch, setup, validation, wallet boundaries, and collaboration rules |

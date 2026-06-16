@@ -41,6 +41,17 @@ describe("frontend wallet menu", () => {
     expect(providers).toContain("autoConnect={false}");
     expect(page).toContain("Connecting Endless Web Wallet");
     expect(page).toContain("Using Endless Web Wallet SDK in this browser");
+    expect(page).toContain("Prepare a 0.000001 SOL transfer proposal to Alice on Solana mainnet");
+    expect(page).toContain("reward ${amount} SOL to Alice on Solana ${chain.networkKind}");
+    expect(page).toContain("connection.getBalance(solanaWallet.publicKey");
+    expect(page).toContain("connection.getFeeForMessage(transaction.compileMessage()");
+    expect(page).toContain("Insufficient Solana ${selectedChain.networkKind} balance");
+    expect(page).toContain("Solana tx payload: endpoint=");
+    expect(page).toContain("SOLANA_FEE_FALLBACK_LAMPORTS");
+    expect(page).toContain("SOLANA_MAINNET_FALLBACK_ENDPOINT");
+    expect(page).toContain("solanaEndpointsForChain");
+    expect(page).toContain("Solana RPC unavailable for ${selectedChain.label}");
+    expect(page).toContain("Solana transaction request failed");
   });
 
   it("exposes Base mainnet guard and repeatable on-chain manual tests", () => {
@@ -59,6 +70,10 @@ describe("frontend wallet menu", () => {
     expect(page).toContain("@endlesslab/endless-web3-sdk");
     expect(page).toContain("EndlessJsSdk");
     expect(page).toContain("sdk.open()");
+    expect(page).toContain("hideEndlessWebWalletModal");
+    expect(page).toContain('modal.style.removeProperty("display")');
+    expect(page).toContain("modal.classList.add(ENDLESS_MODAL_HIDDEN_CLASS)");
+    expect(page).not.toContain('display: "flex"');
     expect(page).toContain("AccountAddress.fromBs58String");
     expect(page).toContain("new TypeTagAddress()");
     expect(page).toContain("new TypeTagU128()");
@@ -73,10 +88,13 @@ describe("frontend wallet menu", () => {
     expect(page).toContain("effectiveRecipientAddressForChain(selectedChain, recipientAddress)");
     expect(page).toContain("Using Alice's fixed Endless address for this real-chain reward validation.");
     expect(page).toContain("ENDLESS_TX_OPTIONS");
+    expect(page).toContain("ENDLESS_WALLET_RESPONSE_TIMEOUT_MS");
+    expect(page).toContain("Endless Web Wallet transaction confirmation timed out");
     expect(page).toContain("getAccountEDSAmount");
     expect(page).toContain("Insufficient Endless ${selectedChain.networkKind} EDS balance");
     expect(page).toContain("options,");
     expect(page).toContain("Endless tx payload: sender=");
+    expect(page).toContain("functionArguments: [recipient, amountUnits.toString()]");
     expect(page).toContain("A real Endless transaction requires a Luffa / Endless recipient address");
     expect(page).toContain('max: selectedChain.chainType === "endless" ? "0.001" : maxAmount');
     expect(page).not.toContain("reward 1 EDS to Alice with Luffa App on Endless testnet");

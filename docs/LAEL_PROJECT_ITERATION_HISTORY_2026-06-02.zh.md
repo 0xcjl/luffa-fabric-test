@@ -378,3 +378,36 @@ Mapping DID / Luffa DID
 如果本次迭代影响新会话上下文，还必须更新 `NEXT_SESSION_HANDOFF.md`。
 
 本文件是项目演进记录，不替代需求文档、MVP 文档和测试报告。
+
+## 2026-06-16 钱包交互稳定性修复
+
+### 背景
+
+P0-P2 关键闭环完成后，继续做手动钱包回归时发现 Solana Mainnet 和 Endless Web Wallet 的交互稳定性还需要补强：
+
+- Endless Web Wallet modal 在授权完成或关闭后可能不退出。
+- Endless Web Wallet account / transaction 请求缺少超时反馈。
+- Solana Mainnet 交易前未显示 sender 余额、金额和手续费预算，Phantom 只能在弹窗内提示 SOL 不足。
+- Solana RPC `getLatestBlockhash` fetch 失败会触发 Next Runtime Error overlay。
+- 当前 Cloudflare public callback 返回 1033 / 530，扫码验收需要先恢复 tunnel。
+
+### 实现
+
+- 前端移除对 Endless SDK modal 的强制 `display: flex`，并在 connect / sign 结束后调用 `hideEndlessWebWalletModal()`。
+- Endless Web Wallet account request / transaction confirmation 增加 30 秒 timeout。
+- Solana Mainnet 默认 proposal 和 Task Reward prompt 固定为 `0.000001 SOL`。
+- Solana 签名前执行 `getBalance` + `getFeeForMessage` 预检，余额不足时在页面日志中显示 sender、balance、required、amount 和 feeBudget。
+- Solana Mainnet RPC 改为候选列表并逐个重试；RPC 或交易准备失败时写入页面日志，不再让页面崩溃。
+
+### 测试
+
+- `npm test -- tests/frontend-wallet-menu.test.ts`：7/7 passed。
+- `npm run typecheck`：通过。
+- `npm run build` in `src/frontend`：通过。
+- 本地 API / frontend 均在线。
+- `npm run health:luffa-app` 当前因 public callback 530 失败；该失败被归类为本机 TUN / DNS 到 Cloudflare edge 的连接问题，不影响本地钱包路径测试。
+
+### 文档
+
+- 新增 `docs/LAEL_WALLET_STABILITY_FIX_REPORT_2026-06-16.zh.md`。
+- 同步更新 `docs/README.md`、`docs/LAEL_DOCS_TIMELINE_v0.3.zh.md`、`NEXT_SESSION_HANDOFF.md` 和前端 Project Docs。

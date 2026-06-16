@@ -69,6 +69,10 @@ describe("frontend Project Docs data", () => {
     expect(content).toContain("Full Regression QA Report");
     expect(content).toContain(".next-live");
     expect(content).toContain(".next-build");
+    expect(content).toContain("Wallet Stability Fix Report");
+    expect(content).toContain("Solana Mainnet transfer");
+    expect(content).toContain("余额 + fee 预检");
+    expect(content).toContain("198.18.*");
   });
 
   it("indexes the key docs and test reports shown in the frontend", () => {
@@ -94,6 +98,7 @@ describe("frontend Project Docs data", () => {
     expect(indexText).toContain("LAEL_LUFFA_APP_ENDLESS_MAINNET_TASK_REWARD_REPORT_2026-06-16.zh.md");
     expect(indexText).toContain("LAEL_P0_P2_COMPREHENSIVE_TEST_SUMMARY_2026-06-16.zh.md");
     expect(indexText).toContain("LAEL_FULL_REGRESSION_QA_REPORT_2026-06-16.zh.md");
+    expect(indexText).toContain("LAEL_WALLET_STABILITY_FIX_REPORT_2026-06-16.zh.md");
     expect(indexText).toContain("LAEL_PROJECT_ITERATION_HISTORY_2026-06-02.zh.md");
     expect(indexText).toContain("LAEL_COLLABORATION_HANDOFF_2026-06-02.zh.md");
   });
